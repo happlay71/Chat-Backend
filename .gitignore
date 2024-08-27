@@ -1,19 +1,19 @@
 # 默认忽略的文件
 /.idea/
-*.iml
-*.ipr
-*.iws
 /shelf/
 /.idea/workspace.xml
 /log.path_IS_UNDEFINED
-/application-local.yaml
 /target/
 /build/
 /node_modules/
-*.log
 /logs/
 .env
+application-local.yaml
 docker-compose.override.yml
+*.log
+*.iml
+*.ipr
+*.iws
 # 基于编辑器的 HTTP 客户端请求
 /httpRequests/
 # Datasource local storage ignored files
