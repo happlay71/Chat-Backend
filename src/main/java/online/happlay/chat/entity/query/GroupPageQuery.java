@@ -1,13 +1,12 @@
-package online.happlay.chat.entity.page;
+package online.happlay.chat.entity.query;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 
 @Data
-public class GroupPageQuery{
+public class GroupPageQuery extends PageQuery{
     @ApiModelProperty(value = "群ID")
     private String groupId;
 

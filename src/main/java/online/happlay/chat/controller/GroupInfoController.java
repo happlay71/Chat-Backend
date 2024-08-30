@@ -1,24 +1,19 @@
 package online.happlay.chat.controller;
 
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.entity.dto.SaveGroupDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
-import online.happlay.chat.entity.page.GroupPageQuery;
 import online.happlay.chat.entity.po.GroupInfo;
 import online.happlay.chat.entity.vo.GroupDetails;
 import online.happlay.chat.entity.vo.GroupInfoVO;
 import online.happlay.chat.entity.vo.MyGroups;
 import online.happlay.chat.entity.vo.ResponseVO;
 import online.happlay.chat.service.IGroupInfoService;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

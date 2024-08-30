@@ -1,6 +1,8 @@
 package online.happlay.chat.service.impl;
 
+import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContactApply;
+import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.mapper.UserContactApplyMapper;
 import online.happlay.chat.service.IUserContactApplyService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -17,4 +19,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMapper, UserContactApply> implements IUserContactApplyService {
 
+    @Override
+    public PaginationResultVO loadApply(UserTokenDTO userToken, Integer pageNo) {
+        // TODO 按最后申请时间倒叙排序
+        return null;
+    }
 }

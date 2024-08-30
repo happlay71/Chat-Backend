@@ -1,5 +1,7 @@
 package online.happlay.chat.service;
 
+import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.vo.UserContactSearchResultVO;
 import online.happlay.chat.entity.po.UserContact;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -13,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IUserContactService extends IService<UserContact> {
 
+    UserContactSearchResultVO searchContact(String userId, String contactId);
+
+    Integer applyAdd(UserTokenDTO userToken, String contactId, String applyInfo);
 }

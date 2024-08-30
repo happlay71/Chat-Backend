@@ -7,7 +7,6 @@ import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.SysSettingDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
-import online.happlay.chat.entity.page.GroupPageQuery;
 import online.happlay.chat.entity.po.GroupInfo;
 import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.po.UserInfo;

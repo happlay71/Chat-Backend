@@ -1,7 +1,9 @@
 package online.happlay.chat.service;
 
+import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContactApply;
 import com.baomidou.mybatisplus.extension.service.IService;
+import online.happlay.chat.entity.vo.PaginationResultVO;
 
 /**
  * <p>
@@ -13,4 +15,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IUserContactApplyService extends IService<UserContactApply> {
 
+    PaginationResultVO loadApply(UserTokenDTO userToken, Integer pageNo);
 }
