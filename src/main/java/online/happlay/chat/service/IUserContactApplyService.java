@@ -16,4 +16,6 @@ import online.happlay.chat.entity.vo.PaginationResultVO;
 public interface IUserContactApplyService extends IService<UserContactApply> {
 
     PaginationResultVO loadApply(UserTokenDTO userToken, Integer pageNo);
+
+    void dealWithApply(String userId, Integer applyId, Integer status);
 }

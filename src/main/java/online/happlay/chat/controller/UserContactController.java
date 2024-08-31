@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.entity.vo.PaginationResultVO;
+import online.happlay.chat.entity.vo.UserContactApplyLoadVO;
 import online.happlay.chat.entity.vo.UserContactSearchResultVO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.vo.ResponseVO;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 /**
  * <p>
@@ -55,12 +57,23 @@ public class UserContactController extends BaseController{
         return getSuccessResponseVO(joinType);
     }
 
-    @ApiOperation("好友申请")
-    @PostMapping("/loadApply")
+    @ApiOperation("查看好友申请")
+    @GetMapping("/loadApply")
     @GlobalInterceptor
-    public ResponseVO loadApply(HttpServletRequest request, @RequestParam("pageNo") Integer pageNo) {
+    public ResponseVO loadApply(HttpServletRequest request, @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo) {
         UserTokenDTO userToken = getUserToken(request);
-        PaginationResultVO resultVO = userContactApplyService.loadApply(userToken, pageNo);
+        PaginationResultVO<UserContactApplyLoadVO> resultVO = userContactApplyService.loadApply(userToken, pageNo);
         return getSuccessResponseVO(resultVO);
+    }
+
+    @ApiOperation("处理好友申请")
+    @PostMapping("/dealWithApply")
+    @GlobalInterceptor
+    public ResponseVO dealWithApply(HttpServletRequest request,
+                                    @RequestParam("applyId") @NotNull Integer applyId,
+                                    @RequestParam("status") @NotNull Integer status) {
+        UserTokenDTO userToken = getUserToken(request);
+        userContactApplyService.dealWithApply(userToken.getUserId(), applyId, status);
+        return getSuccessResponseVO(null);
     }
 }
