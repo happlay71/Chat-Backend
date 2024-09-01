@@ -2,6 +2,7 @@ package online.happlay.chat.entity.vo;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import online.happlay.chat.enums.UserContactApplyStatusEnum;
 
 @Data
 public class UserContactApplyLoadVO {
@@ -32,4 +33,12 @@ public class UserContactApplyLoadVO {
 
     @ApiModelProperty(value = "用户或群组名称")
     private String contactName;
+
+    @ApiModelProperty(value = "状态名称")
+    private String statusName;
+
+    public String getStatusName() {
+        UserContactApplyStatusEnum statusEnum = UserContactApplyStatusEnum.getByStatus(status);
+        return statusEnum == null ? null : statusEnum.getDesc();
+    }
 }

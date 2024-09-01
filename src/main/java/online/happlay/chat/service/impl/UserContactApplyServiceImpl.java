@@ -3,18 +3,17 @@ package online.happlay.chat.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import online.happlay.chat.entity.dto.SysSettingDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.po.UserContactApply;
 import online.happlay.chat.entity.query.UserContactApplyQuery;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.UserContactApplyLoadVO;
-import online.happlay.chat.enums.PageSize;
-import online.happlay.chat.enums.ResponseCodeEnum;
-import online.happlay.chat.enums.UserContactApplyStatusEnum;
-import online.happlay.chat.enums.UserContactStatusEnum;
+import online.happlay.chat.enums.*;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserContactApplyMapper;
+import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.IUserContactApplyService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.service.IUserContactService;
@@ -25,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,7 +36,10 @@ import java.util.List;
  * @since 2024-08-26
  */
 @Service
+@RequiredArgsConstructor
 public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMapper, UserContactApply> implements IUserContactApplyService {
+
+    private final RedisComponent redisComponent;
 
     @Lazy
     @Resource
@@ -101,7 +104,9 @@ public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMap
 
         // 请求通过
         if (UserContactApplyStatusEnum.PASS.getStatus().equals(status)) {
-            // TODO 添加联系人
+            // 添加联系人
+            addContact(apply.getApplyUserId(), apply.getReceiveUserId(),
+                    apply.getContactId(), apply.getContactType(), apply.getApplyInfo());
             return;
         }
 
@@ -119,5 +124,60 @@ public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMap
             userContact.setLastUpdateTime(LocalDateTime.now());
             userContactService.save(userContact);
         }
+    }
+
+    @Override
+    public void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo) {
+        // 群聊人数
+        if (UserContactTypeEnum.GROUP.getType().equals(contactType)) {
+            long count = userContactService.count(
+                    new LambdaQueryWrapper<UserContact>()
+                            .eq(UserContact::getContactId, contactId)
+                            .eq(UserContact::getStatus, UserContactStatusEnum.FRIEND.getStatus())
+            );
+
+            SysSettingDTO sysSettingDTO = redisComponent.getSysSetting();
+            if (count >= sysSettingDTO.getMaxGroupMemberCount()) {
+                throw new BusinessException("成员已满员，无法加入");
+            }
+        }
+
+        // 同意，双方好友记录写入数据库
+        ArrayList<UserContact> contactList = new ArrayList<>();
+        LocalDateTime time = LocalDateTime.now();
+        // 申请人添加对方
+        UserContact userContact = new UserContact();
+        userContact.setUserId(applyUserId);
+        userContact.setContactId(contactId);
+        userContact.setContactType(contactType);
+        userContact.setCreateTime(time);
+        userContact.setLastUpdateTime(time);
+        userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
+        contactList.add(userContact);
+
+        // 受邀人添加申请人，写入数据库，群组不用记录
+        if (UserContactTypeEnum.USER.getType().equals(contactType)) {
+            userContact = new UserContact();
+            userContact.setUserId(receiveUserId);
+            userContact.setContactId(applyUserId);
+            userContact.setContactType(contactType);
+            userContact.setCreateTime(time);
+            userContact.setLastUpdateTime(time);
+            userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
+            contactList.add(userContact);
+        }
+
+        userContactService.saveBatch(contactList);
+
+        // TODO 如果是好友，接收人也添加申请人为好友 添加缓存
+
+        // TODO 创建会话 发送消息
+    }
+
+    @Override
+    public List<UserContact> loadContact(String userId, String contactType) {
+        // TODO 展示自己创建的群，加入的群，联系人（只展示好友，被删除，被拉黑的（初次申请除外））
+
+        return null;
     }
 }

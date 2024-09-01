@@ -139,8 +139,8 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
 
         // 直接加入，不用添加到申请记录
         if (JoinTypeEnum.JOIN.getType().equals(joinType)) {
-            // TODO 添加联系人
-
+            // 添加联系人
+            userContactApplyService.addContact(applyUserId, receiveUserId, contactId, typeEnum.getType(), applyInfo);
             return joinType;
         }
 

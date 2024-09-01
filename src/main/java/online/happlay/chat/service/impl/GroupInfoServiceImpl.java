@@ -161,6 +161,7 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         long count = userContactService.count(
                 new LambdaQueryWrapper<UserContact>()
                         .eq(UserContact::getContactId, groupId)
+                        .eq(UserContact::getStatus, UserContactStatusEnum.FRIEND.getStatus())
         );
 
         GroupDetails groupDetails = BeanUtil.copyProperties(groupInfo, GroupDetails.class);

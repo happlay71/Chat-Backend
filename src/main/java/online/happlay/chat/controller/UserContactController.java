@@ -5,11 +5,15 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
+import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.UserContactApplyLoadVO;
 import online.happlay.chat.entity.vo.UserContactSearchResultVO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.vo.ResponseVO;
+import online.happlay.chat.enums.ResponseCodeEnum;
+import online.happlay.chat.enums.UserContactTypeEnum;
+import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.service.IUserContactApplyService;
 import online.happlay.chat.service.IUserContactService;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * <p>
@@ -75,5 +80,19 @@ public class UserContactController extends BaseController{
         UserTokenDTO userToken = getUserToken(request);
         userContactApplyService.dealWithApply(userToken.getUserId(), applyId, status);
         return getSuccessResponseVO(null);
+    }
+
+    @ApiOperation("处理好友申请")
+    @PostMapping("/loadContact")
+    @GlobalInterceptor
+    public ResponseVO loadContact(HttpServletRequest request,
+                                    @RequestParam("contactType") @NotNull String contactType) {
+        UserContactTypeEnum typeEnum = UserContactTypeEnum.getByName(contactType);
+        if (null == typeEnum) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        UserTokenDTO userToken = getUserToken(request);
+        List<UserContact> contactList = userContactApplyService.loadContact(userToken.getUserId(), contactType);
+        return getSuccessResponseVO(contactList);
     }
 }
