@@ -6,11 +6,8 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.entity.po.UserContact;
-import online.happlay.chat.entity.vo.PaginationResultVO;
-import online.happlay.chat.entity.vo.UserContactApplyLoadVO;
-import online.happlay.chat.entity.vo.UserContactSearchResultVO;
+import online.happlay.chat.entity.vo.*;
 import online.happlay.chat.entity.dto.UserTokenDTO;
-import online.happlay.chat.entity.vo.ResponseVO;
 import online.happlay.chat.enums.ResponseCodeEnum;
 import online.happlay.chat.enums.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
@@ -82,7 +79,7 @@ public class UserContactController extends BaseController{
         return getSuccessResponseVO(null);
     }
 
-    @ApiOperation("处理好友申请")
+    @ApiOperation("加载全部好友和群组")
     @PostMapping("/loadContact")
     @GlobalInterceptor
     public ResponseVO loadContact(HttpServletRequest request,
@@ -92,7 +89,7 @@ public class UserContactController extends BaseController{
             throw new BusinessException(ResponseCodeEnum.CODE_600);
         }
         UserTokenDTO userToken = getUserToken(request);
-        List<UserContact> contactList = userContactApplyService.loadContact(userToken.getUserId(), contactType);
+        List<UserLoadContactVO> contactList = userContactService.loadContact(userToken.getUserId(), typeEnum);
         return getSuccessResponseVO(contactList);
     }
 }

@@ -11,6 +11,7 @@ import online.happlay.chat.entity.vo.UserContactSearchResultVO;
 import online.happlay.chat.entity.po.GroupInfo;
 import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.po.UserInfo;
+import online.happlay.chat.entity.vo.UserLoadContactVO;
 import online.happlay.chat.enums.*;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserContactMapper;
@@ -26,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -176,5 +180,62 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         }
 
         return joinType;
+    }
+
+    @Override
+    public List<UserLoadContactVO> loadContact(String userId, UserContactTypeEnum typeEnum) {
+        // TODO 展示自己创建的群，加入的群，联系人（只展示好友，被删除，被拉黑的（初次申请除外））
+
+        // 查询所有符合条件的user_contact的内容
+        LambdaQueryWrapper<UserContact> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserContact::getUserId, userId)
+                .ne(UserContact::getStatus, UserContactStatusEnum.NOT_FRIEND.getStatus())
+                .ne(UserContact::getStatus, UserContactStatusEnum.DEL.getStatus())
+                .ne(UserContact::getStatus, UserContactStatusEnum.BLACKLIST.getStatus());
+
+        switch (typeEnum) {
+            case USER:
+                // 查询所有符合条件的个人联系人
+                queryWrapper.eq(UserContact::getContactType, UserContactTypeEnum.USER.getType());
+                // 如果创建时间和最后更新时间相等且状态为被拉黑的情况，则不出现在查询结果里
+                queryWrapper.and(qw ->
+                                qw.ne(UserContact::getStatus, UserContactStatusEnum.BLACKLIST_BE.getStatus())
+                                        .or()
+                                        .apply("create_time <> last_update_time"))
+                        .orderByDesc(UserContact::getLastUpdateTime);
+                break;
+            case GROUP:
+                // 查询所有符合条件的群组联系人
+                queryWrapper.eq(UserContact::getContactType, UserContactTypeEnum.GROUP.getType());
+                System.out.println("群组" + this.list(queryWrapper));
+                // 如果创建时间和最后更新时间相等且状态为被拉黑的情况，则不出现在查询结果里
+                // 这里的意思是只要创建时间和最后更新时间不等或不为被拉黑的情况，则包含在查询记录中
+                queryWrapper.and(qw ->
+                        qw.ne(UserContact::getStatus, UserContactStatusEnum.BLACKLIST_BE.getStatus())
+                                .or()
+                                .apply("create_time <> last_update_time"))
+                        .orderByDesc(UserContact::getLastUpdateTime);
+                System.out.println("群组" + this.list(queryWrapper));
+                break;
+        }
+
+        List<UserContact> userContacts = this.list(queryWrapper);
+
+        List<UserLoadContactVO> collectList = userContacts.stream().map(userContact -> {
+            UserLoadContactVO userLoadContactVO = BeanUtil.copyProperties(userContact, UserLoadContactVO.class);
+            String contactName = null;
+            switch (typeEnum) {
+                case USER:
+                    contactName = userInfoService.getById(userLoadContactVO.getContactId()).getNickName();
+                    break;
+                case GROUP:
+                    contactName = groupInfoService.getById(userLoadContactVO.getContactId()).getGroupName();
+                    break;
+            }
+            userLoadContactVO.setContactName(contactName);
+            return userLoadContactVO;
+        }).collect(Collectors.toList());
+
+        return collectList;
     }
 }

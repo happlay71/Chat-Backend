@@ -174,10 +174,5 @@ public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMap
         // TODO 创建会话 发送消息
     }
 
-    @Override
-    public List<UserContact> loadContact(String userId, String contactType) {
-        // TODO 展示自己创建的群，加入的群，联系人（只展示好友，被删除，被拉黑的（初次申请除外））
 
-        return null;
-    }
 }

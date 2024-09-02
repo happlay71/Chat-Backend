@@ -24,5 +24,5 @@ public interface IUserContactApplyService extends IService<UserContactApply> {
 
     void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo);
 
-    List<UserContact> loadContact(String userId, String contactType);
+
 }

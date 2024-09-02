@@ -107,7 +107,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
         // 判断账户状态
         if (null == userInfo || !userInfo.getPassword().equals(StringTools.encodeMd5(password))) {
-            throw new BusinessException("账户或密码正确");
+            throw new BusinessException("账户或密码不正确");
         }
 
         if (UserStatusEnum.DISABLE.getStatus().equals(userInfo.getStatus())) {
