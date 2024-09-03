@@ -1,6 +1,7 @@
 package online.happlay.chat.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import online.happlay.chat.entity.vo.UserContactSearchResultVO;
 import online.happlay.chat.entity.po.GroupInfo;
 import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.po.UserInfo;
+import online.happlay.chat.entity.vo.UserInfoVO;
 import online.happlay.chat.entity.vo.UserLoadContactVO;
 import online.happlay.chat.enums.*;
 import online.happlay.chat.exception.BusinessException;
@@ -237,5 +239,44 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         }).collect(Collectors.toList());
 
         return collectList;
+    }
+
+    @Override
+    public UserInfoVO getContactInfo(UserTokenDTO userToken, Integer contactId) {
+        UserInfo userInfo = userInfoService.getById(contactId);
+        UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class);
+        // 初始化为非好友
+        userInfoVO.setContactStatus(UserContactStatusEnum.NOT_FRIEND.getStatus());
+        // 在联系人中查找状态
+        // 原操作为如果在联系人中存在则设置为FRIEND，修改为设置成联系人数据库中的状态
+        UserContact userContact = this.getOne(new LambdaQueryWrapper<UserContact>()
+                .eq(UserContact::getUserId, userToken.getUserId())
+                .eq(UserContact::getContactId, contactId));
+        if (userContact != null) {
+            userInfoVO.setContactStatus(userContact.getStatus());
+        }
+
+        return userInfoVO;
+    }
+
+    @Override
+    public UserInfoVO getContactUserInfo(UserTokenDTO userToken, Integer contactId) {
+
+        // 在联系人中查找状态
+        // 原操作为如果在联系人中存在则设置为FRIEND，修改为设置成联系人数据库中的状态
+        UserContact userContact = this.getOne(new LambdaQueryWrapper<UserContact>()
+                .eq(UserContact::getUserId, userToken.getUserId())
+                .eq(UserContact::getContactId, contactId));
+        if (null == userContact || !ArrayUtil.contains(new Integer[]{
+                UserContactStatusEnum.FRIEND.getStatus(),
+                UserContactStatusEnum.DEL_BE.getStatus(),
+                UserContactStatusEnum.BLACKLIST_BE.getStatus(),
+        }, userContact.getStatus())) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        UserInfo userInfo = userInfoService.getById(contactId);
+        UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class);
+
+        return userInfoVO;
     }
 }

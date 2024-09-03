@@ -17,6 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/userInfo")
 @Api(tags = "用户信息")
-public class UserInfoController {
+public class UserInfoController extends BaseController{
 
 }

@@ -80,7 +80,7 @@ public class UserContactController extends BaseController{
     }
 
     @ApiOperation("加载全部好友和群组")
-    @PostMapping("/loadContact")
+    @GetMapping("/loadContact")
     @GlobalInterceptor
     public ResponseVO loadContact(HttpServletRequest request,
                                     @RequestParam("contactType") @NotNull String contactType) {
@@ -91,5 +91,27 @@ public class UserContactController extends BaseController{
         UserTokenDTO userToken = getUserToken(request);
         List<UserLoadContactVO> contactList = userContactService.loadContact(userToken.getUserId(), typeEnum);
         return getSuccessResponseVO(contactList);
+    }
+
+    @ApiOperation("获取联系人信息，不一定是好友")
+    @GetMapping("/getContactInfo")
+    @GlobalInterceptor
+    public ResponseVO getContactInfo(HttpServletRequest request,
+                                    @RequestParam("contactId") @NotNull Integer contactId) {
+        UserTokenDTO userToken = getUserToken(request);
+        UserInfoVO userInfoVO = userContactService.getContactInfo(userToken, contactId);
+
+        return getSuccessResponseVO(userInfoVO);
+    }
+
+    @ApiOperation("获取好友的详情")
+    @GetMapping("/getContactUserInfo")
+    @GlobalInterceptor
+    public ResponseVO getContactUserInfo(HttpServletRequest request,
+                                     @RequestParam("contactId") @NotNull Integer contactId) {
+        UserTokenDTO userToken = getUserToken(request);
+        UserInfoVO userInfoVO = userContactService.getContactUserInfo(userToken, contactId);
+
+        return getSuccessResponseVO(userInfoVO);
     }
 }
