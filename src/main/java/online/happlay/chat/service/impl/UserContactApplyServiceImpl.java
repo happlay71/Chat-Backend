@@ -105,7 +105,7 @@ public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMap
         // 请求通过
         if (UserContactApplyStatusEnum.PASS.getStatus().equals(status)) {
             // 添加联系人
-            addContact(apply.getApplyUserId(), apply.getReceiveUserId(),
+            userContactService.addContact(apply.getApplyUserId(), apply.getReceiveUserId(),
                     apply.getContactId(), apply.getContactType(), apply.getApplyInfo());
             return;
         }
@@ -125,54 +125,5 @@ public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMap
             userContactService.save(userContact);
         }
     }
-
-    @Override
-    public void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo) {
-        // 群聊人数
-        if (UserContactTypeEnum.GROUP.getType().equals(contactType)) {
-            long count = userContactService.count(
-                    new LambdaQueryWrapper<UserContact>()
-                            .eq(UserContact::getContactId, contactId)
-                            .eq(UserContact::getStatus, UserContactStatusEnum.FRIEND.getStatus())
-            );
-
-            SysSettingDTO sysSettingDTO = redisComponent.getSysSetting();
-            if (count >= sysSettingDTO.getMaxGroupMemberCount()) {
-                throw new BusinessException("成员已满员，无法加入");
-            }
-        }
-
-        // 同意，双方好友记录写入数据库
-        ArrayList<UserContact> contactList = new ArrayList<>();
-        LocalDateTime time = LocalDateTime.now();
-        // 申请人添加对方
-        UserContact userContact = new UserContact();
-        userContact.setUserId(applyUserId);
-        userContact.setContactId(contactId);
-        userContact.setContactType(contactType);
-        userContact.setCreateTime(time);
-        userContact.setLastUpdateTime(time);
-        userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
-        contactList.add(userContact);
-
-        // 受邀人添加申请人，写入数据库，群组不用记录
-        if (UserContactTypeEnum.USER.getType().equals(contactType)) {
-            userContact = new UserContact();
-            userContact.setUserId(receiveUserId);
-            userContact.setContactId(applyUserId);
-            userContact.setContactType(contactType);
-            userContact.setCreateTime(time);
-            userContact.setLastUpdateTime(time);
-            userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
-            contactList.add(userContact);
-        }
-
-        userContactService.saveBatch(contactList);
-
-        // TODO 如果是好友，接收人也添加申请人为好友 添加缓存
-
-        // TODO 创建会话 发送消息
-    }
-
 
 }

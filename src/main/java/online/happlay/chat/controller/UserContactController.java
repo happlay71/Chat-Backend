@@ -9,6 +9,7 @@ import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.vo.*;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.enums.ResponseCodeEnum;
+import online.happlay.chat.enums.UserContactStatusEnum;
 import online.happlay.chat.enums.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.service.IUserContactApplyService;
@@ -97,7 +98,7 @@ public class UserContactController extends BaseController{
     @GetMapping("/getContactInfo")
     @GlobalInterceptor
     public ResponseVO getContactInfo(HttpServletRequest request,
-                                    @RequestParam("contactId") @NotNull Integer contactId) {
+                                    @RequestParam("contactId") @NotNull String contactId) {
         UserTokenDTO userToken = getUserToken(request);
         UserInfoVO userInfoVO = userContactService.getContactInfo(userToken, contactId);
 
@@ -108,10 +109,30 @@ public class UserContactController extends BaseController{
     @GetMapping("/getContactUserInfo")
     @GlobalInterceptor
     public ResponseVO getContactUserInfo(HttpServletRequest request,
-                                     @RequestParam("contactId") @NotNull Integer contactId) {
+                                     @RequestParam("contactId") @NotNull String contactId) {
         UserTokenDTO userToken = getUserToken(request);
         UserInfoVO userInfoVO = userContactService.getContactUserInfo(userToken, contactId);
 
         return getSuccessResponseVO(userInfoVO);
+    }
+
+    @ApiOperation("删除联系人")
+    @GetMapping("/delContact")
+    @GlobalInterceptor
+    public ResponseVO delContact(HttpServletRequest request,
+                                     @RequestParam("contactId") @NotNull String contactId) {
+        UserTokenDTO userToken = getUserToken(request);
+        userContactService.removeUserContact(userToken.getUserId(), contactId, UserContactStatusEnum.DEL);
+        return getSuccessResponseVO(null);
+    }
+
+    @ApiOperation("拉黑联系人")
+    @GetMapping("/addContact2BlackList")
+    @GlobalInterceptor
+    public ResponseVO addContact2BlackList(HttpServletRequest request,
+                                     @RequestParam("contactId") @NotNull String contactId) {
+        UserTokenDTO userToken = getUserToken(request);
+        userContactService.removeUserContact(userToken.getUserId(), contactId, UserContactStatusEnum.BLACKLIST);
+        return getSuccessResponseVO(null);
     }
 }

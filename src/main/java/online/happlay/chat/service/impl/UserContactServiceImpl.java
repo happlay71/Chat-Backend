@@ -4,8 +4,10 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.constants.Constants;
+import online.happlay.chat.entity.dto.SysSettingDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContactApply;
 import online.happlay.chat.entity.vo.UserContactSearchResultVO;
@@ -17,11 +19,13 @@ import online.happlay.chat.entity.vo.UserLoadContactVO;
 import online.happlay.chat.enums.*;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserContactMapper;
+import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.IGroupInfoService;
 import online.happlay.chat.service.IUserContactApplyService;
 import online.happlay.chat.service.IUserContactService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.service.IUserInfoService;
+import org.apache.catalina.User;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +52,8 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
     private final IUserInfoService userInfoService;
 
     private final IUserContactApplyService userContactApplyService;
+
+    private final RedisComponent redisComponent;
 
     @Resource
     @Lazy
@@ -146,7 +152,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         // 直接加入，不用添加到申请记录
         if (JoinTypeEnum.JOIN.getType().equals(joinType)) {
             // 添加联系人
-            userContactApplyService.addContact(applyUserId, receiveUserId, contactId, typeEnum.getType(), applyInfo);
+            addContact(applyUserId, receiveUserId, contactId, typeEnum.getType(), applyInfo);
             return joinType;
         }
 
@@ -242,7 +248,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
     }
 
     @Override
-    public UserInfoVO getContactInfo(UserTokenDTO userToken, Integer contactId) {
+    public UserInfoVO getContactInfo(UserTokenDTO userToken, String contactId) {
         UserInfo userInfo = userInfoService.getById(contactId);
         UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class);
         // 初始化为非好友
@@ -260,7 +266,98 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
     }
 
     @Override
-    public UserInfoVO getContactUserInfo(UserTokenDTO userToken, Integer contactId) {
+    public void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo) {
+        // 群聊人数
+        if (UserContactTypeEnum.GROUP.getType().equals(contactType)) {
+            long count = this.count(
+                    new LambdaQueryWrapper<UserContact>()
+                            .eq(UserContact::getContactId, contactId)
+                            .eq(UserContact::getStatus, UserContactStatusEnum.FRIEND.getStatus())
+            );
+
+            SysSettingDTO sysSettingDTO = redisComponent.getSysSetting();
+            if (count >= sysSettingDTO.getMaxGroupMemberCount()) {
+                throw new BusinessException("成员已满员，无法加入");
+            }
+        }
+
+        // 同意，双方好友记录写入数据库
+        ArrayList<UserContact> contactList = new ArrayList<>();
+        LocalDateTime time = LocalDateTime.now();
+        // 申请人添加对方
+        UserContact userContact = new UserContact();
+        userContact.setUserId(applyUserId);
+        userContact.setContactId(contactId);
+        userContact.setContactType(contactType);
+        userContact.setCreateTime(time);
+        userContact.setLastUpdateTime(time);
+        userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
+        contactList.add(userContact);
+
+        // 受邀人添加申请人，写入数据库，群组不用记录
+        if (UserContactTypeEnum.USER.getType().equals(contactType)) {
+            userContact = new UserContact();
+            userContact.setUserId(receiveUserId);
+            userContact.setContactId(applyUserId);
+            userContact.setContactType(contactType);
+            userContact.setCreateTime(time);
+            userContact.setLastUpdateTime(time);
+            userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
+            contactList.add(userContact);
+        }
+
+        this.saveBatch(contactList);
+
+        // TODO 如果是好友，接收人也添加申请人为好友 添加缓存
+
+        // TODO 创建会话 发送消息
+    }
+
+    @Override
+    @Transactional
+    public void removeUserContact(String userId, String contactId, UserContactStatusEnum userContactStatusEnum) {
+        // 双条件的主键约束会导致报错，报已存在相同数据
+        // 查找并更新当前用户与好友的关系状态
+        UserContact userContact = this.getOne(new LambdaQueryWrapper<UserContact>()
+                .eq(UserContact::getUserId, userId)
+                .eq(UserContact::getContactId, contactId));
+        if (userContact == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        // 只更新状态字段，避免更新其他字段导致唯一约束冲突！！！
+        userContact.setStatus(userContactStatusEnum.getStatus());
+        this.update(new LambdaUpdateWrapper<UserContact>()
+                .set(UserContact::getStatus, userContactStatusEnum.getStatus())
+                .eq(UserContact::getUserId, userContact.getUserId())
+                .eq(UserContact::getContactId, userContact.getContactId()));
+
+        // 查找并更新好友与当前用户的关系状态
+        UserContact otherUserContact = this.getOne(new LambdaQueryWrapper<UserContact>()
+                .eq(UserContact::getUserId, contactId)
+                .eq(UserContact::getContactId, userId));
+        if (otherUserContact == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        // 根据当前用户的操作更新好友的状态
+        if (UserContactStatusEnum.DEL == userContactStatusEnum) {
+            otherUserContact.setStatus(UserContactStatusEnum.DEL_BE.getStatus());
+        } else if (UserContactStatusEnum.BLACKLIST == userContactStatusEnum) {
+            otherUserContact.setStatus(UserContactStatusEnum.BLACKLIST_BE.getStatus());
+        }
+        this.update(new LambdaUpdateWrapper<UserContact>()
+                .set(UserContact::getStatus, otherUserContact.getStatus())
+                .eq(UserContact::getUserId, otherUserContact.getUserId())
+                .eq(UserContact::getContactId, otherUserContact.getContactId()));
+
+        // TODO 从我的列表缓存中删除好友
+
+        // TODO 从好友的列表缓存中删除我
+    }
+
+    @Override
+    public UserInfoVO getContactUserInfo(UserTokenDTO userToken, String contactId) {
 
         // 在联系人中查找状态
         // 原操作为如果在联系人中存在则设置为FRIEND，修改为设置成联系人数据库中的状态

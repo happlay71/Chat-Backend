@@ -6,6 +6,7 @@ import online.happlay.chat.entity.po.UserContact;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.UserInfoVO;
 import online.happlay.chat.entity.vo.UserLoadContactVO;
+import online.happlay.chat.enums.UserContactStatusEnum;
 import online.happlay.chat.enums.UserContactTypeEnum;
 
 import java.util.List;
@@ -26,7 +27,11 @@ public interface IUserContactService extends IService<UserContact> {
 
     List<UserLoadContactVO> loadContact(String userId, UserContactTypeEnum typeEnum);
 
-    UserInfoVO getContactInfo(UserTokenDTO userToken, Integer contactId);
+    UserInfoVO getContactInfo(UserTokenDTO userToken, String contactId);
 
-    UserInfoVO getContactUserInfo(UserTokenDTO userToken, Integer contactId);
+    UserInfoVO getContactUserInfo(UserTokenDTO userToken, String contactId);
+
+    void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo);
+
+    void removeUserContact(String userId, String contactId, UserContactStatusEnum userContactStatusEnum);
 }
