@@ -1,9 +1,11 @@
 package online.happlay.chat.entity.dto;
 
 import lombok.Data;
+import online.happlay.chat.constants.Constants;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 
 @Data
 public class LoginDTO {
@@ -15,6 +17,7 @@ public class LoginDTO {
     private String email;
 
     @NotBlank
+    @Pattern(regexp = Constants.REGEX_PASSWORD)
     private String password;
 
     @NotBlank

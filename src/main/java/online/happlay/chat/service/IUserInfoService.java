@@ -4,6 +4,9 @@ import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.UserInfoVO;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 /**
  * <p>
@@ -35,4 +38,8 @@ public interface IUserInfoService extends IService<UserInfo> {
      * @param password
      */
     UserInfoVO login(String email, String password);
+
+    UserInfoVO getUserInfo(UserTokenDTO userToken);
+
+    void updateUserInfo(UserInfo userInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException;
 }

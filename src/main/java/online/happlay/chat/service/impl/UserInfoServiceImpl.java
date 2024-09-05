@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.config.CommonConfig;
+import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.enums.BeautyAccountStatusEnum;
 import online.happlay.chat.enums.JoinTypeEnum;
@@ -23,7 +24,10 @@ import online.happlay.chat.utils.StringTools;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -46,7 +50,6 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     private final CommonConfig commonConfig;
 
     private final RedisComponent redisComponent;
-
 
     @Override
     public UserInfo getByEmail(String email) {
@@ -133,6 +136,40 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         // 转换为UserInfoVO
         return changeToUserInfoVO(userInfo, userTokenDTO);
 
+    }
+
+    @Override
+    public UserInfoVO getUserInfo(UserTokenDTO userToken) {
+        UserInfo userInfo = this.getById(userToken.getUserId());
+        UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class);
+        userInfoVO.setAdmin(userToken.getAdmin());
+        return userInfoVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUserInfo(UserInfo userInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException {
+        if (avatarFile != null) {
+            String baseFolder = commonConfig.getProjectFolder() + Constants.FILE_FOLDER_FILE;
+            File targetFileFolder = new File(baseFolder + Constants.FILE_FOLDER_AVATAR_NAME);
+            if (!targetFileFolder.exists()) {
+                targetFileFolder.mkdirs();
+            }
+
+            String filePath = targetFileFolder.getPath() + "/" + userInfo.getUserId() + Constants.IMAGE_SUFFIX;
+            avatarFile.transferTo(new File(filePath));
+            avatarCover.transferTo(new File(filePath + Constants.COVER_IMAGE_SUFFIX));
+        }
+        // 先查询后提交，防止提交时事务开启导致查询失败
+        UserInfo dbInfo = this.getById(userInfo.getUserId());
+        this.updateById(userInfo);
+
+        String contactNameUpdate = null;
+        if (dbInfo.getNickName().equals(userInfo.getNickName())) {
+            contactNameUpdate = userInfo.getNickName();
+        }
+
+        // TODO 更新会话信息中的昵称信息
     }
 
     private static UserInfoVO changeToUserInfoVO(UserInfo userInfo, UserTokenDTO userTokenDTO) {
