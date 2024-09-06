@@ -3,14 +3,14 @@ package online.happlay.chat.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
+import online.happlay.chat.entity.dto.UserQueryDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
-import online.happlay.chat.enums.BeautyAccountStatusEnum;
-import online.happlay.chat.enums.JoinTypeEnum;
-import online.happlay.chat.enums.UserContactTypeEnum;
-import online.happlay.chat.enums.UserStatusEnum;
+import online.happlay.chat.entity.vo.PaginationResultVO;
+import online.happlay.chat.enums.*;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.po.UserInfoBeauty;
 import online.happlay.chat.entity.vo.UserInfoVO;
@@ -21,6 +21,7 @@ import online.happlay.chat.service.IUserInfoBeautyService;
 import online.happlay.chat.service.IUserInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.utils.StringTools;
+import org.apache.catalina.User;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -144,6 +145,57 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class);
         userInfoVO.setAdmin(userToken.getAdmin());
         return userInfoVO;
+    }
+
+    @Override
+    public void updatePassword(UserTokenDTO userToken, String password) {
+        UserInfo userInfo = this.getById(userToken.getUserId());
+        // 加密存入数据库
+        userInfo.setPassword(StringTools.encodeMd5(password));
+        this.updateById(userInfo);
+    }
+
+    @Override
+    public void updateUserStatus(String userId, Integer status) {
+        UserStatusEnum userStatusEnum = UserStatusEnum.getByStatus(status);
+        if (userStatusEnum == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        LambdaQueryWrapper<UserInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserInfo::getUserId, userId);
+        UserInfo userInfo = this.getById(queryWrapper);
+        userInfo.setStatus(userStatusEnum.getStatus());
+        this.updateById(userInfo);
+    }
+
+    @Override
+    public void forceOffLine(String userId) {
+        // TODO 强制下线
+    }
+
+    @Override
+    public PaginationResultVO loadUser(UserQueryDTO userQueryDTO) {
+        // 获取当前页码和每页大小
+        Integer pageNo = userQueryDTO.getPageNo();
+        Integer pageSize = userQueryDTO.getPageSize();
+
+        // 创建分页对象
+        Page<UserInfo> page = new Page<>(pageNo, pageSize);
+        LambdaQueryWrapper<UserInfo> queryWrapper = new LambdaQueryWrapper<>();
+
+        queryWrapper
+                .orderByDesc(UserInfo::getCreateTime);
+        Page<UserInfo> newPage = this.page(page, queryWrapper);
+
+        return new PaginationResultVO<>(
+                (int) newPage.getTotal(),
+                pageSize,
+                pageNo,
+                (int) newPage.getPages(),
+                newPage.getRecords()
+        );
+
+
     }
 
     @Override

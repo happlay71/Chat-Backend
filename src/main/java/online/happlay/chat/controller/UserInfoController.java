@@ -74,4 +74,13 @@ public class UserInfoController extends BaseController {
         // TODO 强制退出，重新登录
         return getSuccessResponseVO(null);
     }
+
+    @ApiOperation("登出当前用户")
+    @GetMapping("/logout")
+    @GlobalInterceptor
+    public ResponseVO logout(HttpServletRequest request) {
+        UserTokenDTO userToken = getUserToken(request);
+        // TODO 退出登录，关闭WS连接
+        return getSuccessResponseVO(null);
+    }
 }

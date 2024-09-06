@@ -1,8 +1,10 @@
 package online.happlay.chat.service;
 
+import online.happlay.chat.entity.dto.UserQueryDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.UserInfoVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,4 +44,12 @@ public interface IUserInfoService extends IService<UserInfo> {
     UserInfoVO getUserInfo(UserTokenDTO userToken);
 
     void updateUserInfo(UserInfo userInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException;
+
+    void updatePassword(UserTokenDTO userToken, String password);
+
+    PaginationResultVO loadUser(UserQueryDTO userQueryDTO);
+
+    void updateUserStatus(String userId, Integer status);
+
+    void forceOffLine(String userId);
 }
