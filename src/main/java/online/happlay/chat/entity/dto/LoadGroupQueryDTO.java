@@ -1,5 +1,7 @@
-package online.happlay.chat.entity.vo;
+package online.happlay.chat.entity.dto;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -10,9 +12,9 @@ import java.time.LocalDateTime;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class GroupDetails extends PageQuery implements Serializable {
+public class LoadGroupQueryDTO extends PageQuery implements Serializable {
 
-    private static final long serialVersionUID = 6758916958655694226L;
+    private static final long serialVersionUID = 8884496865920999348L;
 
     @ApiModelProperty(value = "群ID")
     private String groupId;
@@ -34,10 +36,4 @@ public class GroupDetails extends PageQuery implements Serializable {
 
     @ApiModelProperty(value = "状态 1：正常 0：解散")
     private Integer status;
-
-    @ApiModelProperty(value = "成员数")
-    private Integer memberCount;
-
-    @ApiModelProperty(value = "群主名")
-    private String groupOwnerNickName;
 }

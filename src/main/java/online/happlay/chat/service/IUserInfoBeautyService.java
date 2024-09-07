@@ -1,7 +1,9 @@
 package online.happlay.chat.service;
 
+import online.happlay.chat.entity.dto.UserBeautyQueryDTO;
 import online.happlay.chat.entity.po.UserInfoBeauty;
 import com.baomidou.mybatisplus.extension.service.IService;
+import online.happlay.chat.entity.vo.PaginationResultVO;
 
 /**
  * <p>
@@ -20,4 +22,10 @@ public interface IUserInfoBeautyService extends IService<UserInfoBeauty> {
     UserInfoBeauty getByEmail(String email);
 
     void useBeauty(UserInfoBeauty beauty);
+
+    PaginationResultVO<UserInfoBeauty> loadBeautyAccountList(UserBeautyQueryDTO userBeautyQueryDTO);
+
+    void saveBeautyAccount(UserInfoBeauty userInfoBeauty);
+
+    void updateBeautyAccount(UserInfoBeauty userInfoBeauty);
 }

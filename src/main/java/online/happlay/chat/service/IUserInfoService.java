@@ -47,7 +47,7 @@ public interface IUserInfoService extends IService<UserInfo> {
 
     void updatePassword(UserTokenDTO userToken, String password);
 
-    PaginationResultVO loadUser(UserQueryDTO userQueryDTO);
+    PaginationResultVO<UserInfo> loadUser(UserQueryDTO userQueryDTO);
 
     void updateUserStatus(String userId, Integer status);
 

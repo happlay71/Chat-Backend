@@ -6,13 +6,14 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
+import online.happlay.chat.entity.dto.LoadGroupQueryDTO;
 import online.happlay.chat.entity.dto.SaveGroupDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.GroupInfo;
-import online.happlay.chat.entity.vo.GroupDetails;
-import online.happlay.chat.entity.vo.GroupInfoVO;
-import online.happlay.chat.entity.vo.MyGroups;
-import online.happlay.chat.entity.vo.ResponseVO;
+import online.happlay.chat.entity.po.UserInfo;
+import online.happlay.chat.entity.vo.*;
+import online.happlay.chat.enums.ResponseCodeEnum;
+import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.service.IGroupInfoService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +60,7 @@ public class GroupInfoController extends BaseController {
     @ApiOperation("查看我创建的群组")
     @GetMapping("/loadMyGroup")
     @GlobalInterceptor
-    public ResponseVO loadMyGroup(HttpServletRequest request) {
+    public ResponseVO<List<MyGroups>> loadMyGroup(HttpServletRequest request) {
         // 获取当前用户的 token 对象
         UserTokenDTO userToken = getUserToken(request);
         List<MyGroups> groupPageQueries = groupInfoService.getMyGroups(userToken);
@@ -70,7 +71,7 @@ public class GroupInfoController extends BaseController {
     @ApiOperation("查看群组的详细信息")
     @PostMapping("/getGroupInfo")
     @GlobalInterceptor
-    public ResponseVO getGroupInfo(HttpServletRequest request, @RequestParam("groupId") @NotEmpty String groupId) {
+    public ResponseVO<GroupDetails> getGroupInfo(HttpServletRequest request, @RequestParam("groupId") @NotEmpty String groupId) {
         // 获取当前用户的 token 对象
         UserTokenDTO userToken = getUserToken(request);
         GroupDetails groupDetails = groupInfoService.getGroupInfo(userToken, groupId);
@@ -81,13 +82,38 @@ public class GroupInfoController extends BaseController {
     @ApiOperation("查看群组的成员信息")
     @PostMapping("/getGroupInfo4Chat")
     @GlobalInterceptor
-    public ResponseVO getGroupMember(HttpServletRequest request, @RequestParam("groupId") @NotEmpty String groupId) {
+    public ResponseVO<GroupInfoVO> getGroupMember(HttpServletRequest request, @RequestParam("groupId") @NotEmpty String groupId) {
         // 获取当前用户的 token 对象
         UserTokenDTO userToken = getUserToken(request);
         GroupInfoVO groupInfoVO = groupInfoService.getGroupMember(userToken, groupId);
         // 返回封装的响应结果
         return getSuccessResponseVO(groupInfoVO);
     }
+
+    @ApiOperation("管理员加载所有群组信息")
+    @GetMapping("/loadGroup")
+    @GlobalInterceptor(checkAdmin = true)
+    public ResponseVO<PaginationResultVO<GroupDetails>> loadGroup(@ModelAttribute LoadGroupQueryDTO loadGroupQueryDTO) {
+        PaginationResultVO<GroupDetails> resultVO = groupInfoService.loadGroup(loadGroupQueryDTO);
+        return getSuccessResponseVO(resultVO);
+    }
+
+    @ApiOperation("管理员解散群组")
+    @PostMapping("/dissolutionGroup")
+    @GlobalInterceptor(checkAdmin = true)
+    public ResponseVO dissolutionGroup(@RequestParam("groupId") @NotEmpty String groupId) {
+        GroupInfo groupInfo = groupInfoService.getById(groupId);
+        if (groupInfo == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        // 获取群主ID
+        String groupOwnerId = groupInfo.getGroupOwnerId();
+
+        groupInfoService.dissolutionGroup(groupId, groupOwnerId);
+        return getSuccessResponseVO(null);
+    }
+
 
 
 

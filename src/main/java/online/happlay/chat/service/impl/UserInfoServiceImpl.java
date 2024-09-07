@@ -174,7 +174,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     }
 
     @Override
-    public PaginationResultVO loadUser(UserQueryDTO userQueryDTO) {
+    public PaginationResultVO<UserInfo> loadUser(UserQueryDTO userQueryDTO) {
         // 获取当前页码和每页大小
         Integer pageNo = userQueryDTO.getPageNo();
         Integer pageSize = userQueryDTO.getPageSize();
@@ -187,7 +187,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
                 .orderByDesc(UserInfo::getCreateTime);
         Page<UserInfo> newPage = this.page(page, queryWrapper);
 
-        return new PaginationResultVO<>(
+        return new PaginationResultVO<UserInfo>(
                 (int) newPage.getTotal(),
                 pageSize,
                 pageNo,

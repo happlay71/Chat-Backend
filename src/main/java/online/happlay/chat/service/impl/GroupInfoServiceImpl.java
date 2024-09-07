@@ -5,15 +5,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
+import online.happlay.chat.entity.dto.LoadGroupQueryDTO;
 import online.happlay.chat.entity.dto.SysSettingDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.GroupInfo;
 import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.po.UserInfo;
-import online.happlay.chat.entity.vo.GroupDetails;
-import online.happlay.chat.entity.vo.GroupInfoVO;
-import online.happlay.chat.entity.vo.MyGroups;
-import online.happlay.chat.entity.vo.UserContactVO;
+import online.happlay.chat.entity.vo.*;
 import online.happlay.chat.enums.GroupStatusEnum;
 import online.happlay.chat.enums.ResponseCodeEnum;
 import online.happlay.chat.enums.UserContactStatusEnum;
@@ -55,6 +53,8 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
     private final IUserContactService userContactService;
 
     private final IUserInfoService userInfoService;
+
+    private final GroupInfoMapper groupInfoMapper;
 
     // 新增
     @Override
@@ -197,6 +197,66 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         groupInfoVO.setGroupInfo(groupInfo);
         groupInfoVO.setUserContactVOList(contactVOList);
         return groupInfoVO;
+    }
+
+    /**
+     * 获取群组信息，内联查询群主信息及群人数
+     * @param loadGroupQueryDTO
+     * @return
+     */
+    @Override
+    public PaginationResultVO<GroupDetails> loadGroup(LoadGroupQueryDTO loadGroupQueryDTO) {
+        // 获取当前页码和每页大小
+        Integer pageNo = loadGroupQueryDTO.getPageNo();
+        Integer pageSize = loadGroupQueryDTO.getPageSize();
+
+        // 计算分页的偏移量
+        int offset = (pageNo - 1) * pageSize;
+
+        // 查询群组信息及其相关联的信息，如群主昵称、成员数
+        List<GroupDetails> groupDetailsList = groupInfoMapper.loadGroupWithDetails(offset, pageSize);
+
+        // 获取总记录数
+        int totalCount = groupInfoMapper.countTotalGroups();
+
+        // 计算总页数
+        int pageTotal = (int) Math.ceil((double) totalCount / pageSize);
+
+        // 构造 PaginationResultVO 对象并返回
+        return new PaginationResultVO<>(
+                totalCount,          // 总记录数
+                pageSize,            // 每页大小
+                pageNo,              // 当前页码
+                pageTotal,           // 总页数
+                groupDetailsList     // 当前页的数据记录列表
+        );
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void dissolutionGroup(String groupId, String groupOwnerId) {
+        GroupInfo groupInfo = this.getById(groupId);
+        if (null == groupInfo || !groupInfo.getGroupOwnerId().equals(groupOwnerId)) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        // 删除群组
+        groupInfo.setStatus(GroupStatusEnum.DISSOLUTION.getStatus());
+        this.updateById(groupInfo);
+
+        // 更新联系人信息
+        LambdaQueryWrapper<UserContact> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper
+                .eq(UserContact::getContactId, groupId)
+                .eq(UserContact::getContactType, UserContactTypeEnum.GROUP.getType());
+
+        // 将所有搜索结果的状态设为del
+        UserContact userContact = new UserContact();
+        userContact.setStatus(UserContactStatusEnum.DEL.getStatus());
+        userContactService.update(userContact, queryWrapper);
+
+        // TODO 移除相关群员的联系人缓存
+        // TODO 发消息 1.更新会话信息 2.记录群消息 3.发送解散通知消息
     }
 
     private void saveAvatar(GroupInfo groupInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException {

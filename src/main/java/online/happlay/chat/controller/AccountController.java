@@ -16,6 +16,7 @@ import com.wf.captcha.ArithmeticCaptcha;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import online.happlay.chat.utils.StringTools;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -80,6 +81,7 @@ public class AccountController extends BaseController {
     @ApiOperation("登录")
     @PostMapping("/login")
     public ResponseVO register(@Validated @ModelAttribute LoginDTO loginDTO) {
+        System.out.println("密码是：" + StringTools.encodeMd5(loginDTO.getPassword()));
         String checkCode = loginDTO.getCheckCode();
         String checkCodeKey = loginDTO.getCheckCodeKey();
         String key = REDIS_KEY_CHECK_CODE + checkCodeKey;

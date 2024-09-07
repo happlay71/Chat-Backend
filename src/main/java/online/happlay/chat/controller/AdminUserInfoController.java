@@ -42,9 +42,9 @@ public class AdminUserInfoController extends BaseController {
     @ApiOperation("获取所有用户信息")
     @GetMapping("/loadUser")
     @GlobalInterceptor(checkAdmin = true)
-    public ResponseVO loadUser(@ModelAttribute UserQueryDTO userQueryDTO) {
+    public ResponseVO<PaginationResultVO<UserInfo>> loadUser(@ModelAttribute UserQueryDTO userQueryDTO) {
         // 按照创建时间倒序
-        PaginationResultVO resultVO = userInfoService.loadUser(userQueryDTO);
+        PaginationResultVO<UserInfo> resultVO = userInfoService.loadUser(userQueryDTO);
         return getSuccessResponseVO(resultVO);
     }
 

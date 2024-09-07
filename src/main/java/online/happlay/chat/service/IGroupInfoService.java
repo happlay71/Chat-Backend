@@ -1,11 +1,13 @@
 package online.happlay.chat.service;
 
+import online.happlay.chat.entity.dto.LoadGroupQueryDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.GroupInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.GroupDetails;
 import online.happlay.chat.entity.vo.GroupInfoVO;
 import online.happlay.chat.entity.vo.MyGroups;
+import online.happlay.chat.entity.vo.PaginationResultVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,4 +38,8 @@ public interface IGroupInfoService extends IService<GroupInfo> {
     GroupDetails getGroupInfo(UserTokenDTO userToken, String groupId);
 
     GroupInfoVO getGroupMember(UserTokenDTO userToken, String groupId);
+
+    PaginationResultVO<GroupDetails> loadGroup(LoadGroupQueryDTO loadGroupQueryDTO);
+
+    void dissolutionGroup(String groupId, String groupOwnerId);
 }
