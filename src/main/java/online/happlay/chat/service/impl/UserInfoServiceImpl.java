@@ -183,15 +183,32 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         Page<UserInfo> page = new Page<>(pageNo, pageSize);
         LambdaQueryWrapper<UserInfo> queryWrapper = new LambdaQueryWrapper<>();
 
-        queryWrapper
-                .orderByDesc(UserInfo::getCreateTime);
+        // 判断并添加查询条件
+        if (userQueryDTO.getUserId() != null && !userQueryDTO.getUserId().isEmpty()) {
+            queryWrapper.like(UserInfo::getUserId, userQueryDTO.getUserId());
+        }
+
+        if (userQueryDTO.getNickName() != null && !userQueryDTO.getNickName().isEmpty()) {
+            queryWrapper.like(UserInfo::getNickName, userQueryDTO.getNickName());
+        }
+
+        // 计算总记录数
+        int total = (int) this.count(queryWrapper);
+
+        // 计算总页数 (总记录数 / 每页记录数，向上取整)
+        int pages = (int) Math.ceil((double) total / pageSize);
+
+        // 添加排序条件
+        queryWrapper.orderByDesc(UserInfo::getCreateTime);
+
         Page<UserInfo> newPage = this.page(page, queryWrapper);
 
+        System.out.println(newPage.getTotal());
         return new PaginationResultVO<UserInfo>(
-                (int) newPage.getTotal(),
+                total,
                 pageSize,
                 pageNo,
-                (int) newPage.getPages(),
+                pages,
                 newPage.getRecords()
         );
 

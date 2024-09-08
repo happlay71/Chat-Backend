@@ -59,13 +59,31 @@ public class UserInfoBeautyServiceImpl extends ServiceImpl<UserInfoBeautyMapper,
 
         // 创建分页对象
         Page<UserInfoBeauty> page = new Page<>(pageNo, pageSize);
-        Page<UserInfoBeauty> newPage = this.page(page, new LambdaQueryWrapper<UserInfoBeauty>()
-                .orderByDesc(UserInfoBeauty::getId));
+
+        LambdaQueryWrapper<UserInfoBeauty> queryWrapper = new LambdaQueryWrapper<>();
+
+        if (userBeautyQueryDTO.getUserId() != null && !userBeautyQueryDTO.getUserId().isEmpty()) {
+            queryWrapper.like(UserInfoBeauty::getUserId, userBeautyQueryDTO.getUserId());
+        }
+
+        if (userBeautyQueryDTO.getEmail() != null && !userBeautyQueryDTO.getEmail().isEmpty()) {
+            queryWrapper.like(UserInfoBeauty::getEmail, userBeautyQueryDTO.getEmail());
+        }
+
+        // 计算总记录数
+        int total = (int) this.count(queryWrapper);
+
+        // 计算总页数 (总记录数 / 每页记录数，向上取整)
+        int pages = (int) Math.ceil((double) total / pageSize);
+
+        queryWrapper.orderByDesc(UserInfoBeauty::getId);
+
+        Page<UserInfoBeauty> newPage = this.page(page, queryWrapper);
         return new PaginationResultVO<UserInfoBeauty>(
-                (int) newPage.getTotal(),
+                total,
                 pageSize,
                 pageNo,
-                (int) newPage.getPages(),
+                pages,
                 newPage.getRecords()
         );
     }

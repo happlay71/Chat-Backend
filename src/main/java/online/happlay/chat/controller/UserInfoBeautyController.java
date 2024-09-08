@@ -30,7 +30,7 @@ import javax.validation.constraints.NotNull;
 public class UserInfoBeautyController extends BaseController{
     private final IUserInfoBeautyService userInfoBeautyService;
 
-    @ApiOperation("加载靓号信息")
+    @ApiOperation("管理员加载靓号信息")
     @GetMapping("/loadBeautyAccountList")
     @GlobalInterceptor(checkAdmin = true)
     public ResponseVO loadBeautyAccountList(@ModelAttribute UserBeautyQueryDTO userBeautyQueryDTO) {
@@ -38,7 +38,7 @@ public class UserInfoBeautyController extends BaseController{
         return getSuccessResponseVO(resultVO);
     }
 
-    @ApiOperation("新增/修改靓号信息")
+    @ApiOperation("管理员新增/修改靓号信息")
     @PostMapping("/saveBeautyAccount")
     @GlobalInterceptor(checkAdmin = true)
     public ResponseVO saveBeautyAccount(@ModelAttribute UserInfoBeauty userInfoBeauty) {
@@ -51,7 +51,7 @@ public class UserInfoBeautyController extends BaseController{
         return getSuccessResponseVO(null);
     }
 
-    @ApiOperation("删除靓号")
+    @ApiOperation("管理员删除靓号")
     @PostMapping("/delBeautyAccount")
     @GlobalInterceptor(checkAdmin = true)
     public ResponseVO delBeautyAccount(@RequestParam("id") @NotNull Integer id) {

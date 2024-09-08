@@ -214,7 +214,13 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         int offset = (pageNo - 1) * pageSize;
 
         // 查询群组信息及其相关联的信息，如群主昵称、成员数
-        List<GroupDetails> groupDetailsList = groupInfoMapper.loadGroupWithDetails(offset, pageSize);
+        List<GroupDetails> groupDetailsList = groupInfoMapper.loadGroupWithDetails(
+                loadGroupQueryDTO.getGroupId(),
+                loadGroupQueryDTO.getGroupName(),
+                loadGroupQueryDTO.getGroupOwnerId(),
+                offset,
+                pageSize
+        );
 
         // 获取总记录数
         int totalCount = groupInfoMapper.countTotalGroups();

@@ -5,22 +5,15 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
-import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.UserQueryDTO;
-import online.happlay.chat.entity.dto.UserTokenDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.ResponseVO;
-import online.happlay.chat.entity.vo.UserInfoVO;
 import online.happlay.chat.service.IUserInfoService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import java.io.IOException;
 
 /**
  * <p>
@@ -34,7 +27,7 @@ import java.io.IOException;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 @Api(tags = "管理员面板")
-public class AdminUserInfoController extends BaseController {
+public class AdminUserController extends BaseController {
 
     private final IUserInfoService userInfoService;
 

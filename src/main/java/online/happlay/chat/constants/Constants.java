@@ -18,8 +18,10 @@ public class Constants {
 
     public static final String FILE_FOLDER_FILE = "/file/";
     public static final String FILE_FOLDER_AVATAR_NAME = "avatar/";
+    public static final String APP_UPDATE_FOLDER = "/app/";
     public static final String IMAGE_SUFFIX = ".png";
     public static final String COVER_IMAGE_SUFFIX = "_cover.png";
+    public static final String APP_EXE_SUFFIX = ".exe";
 
     public static final String APPLY_INFO_TEMPLATE = "我是%s";
 

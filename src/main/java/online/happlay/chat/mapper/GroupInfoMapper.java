@@ -32,11 +32,21 @@ public interface GroupInfoMapper extends BaseMapper<GroupInfo> {
             "from group_info gi " +
             "left join user_info ui on gi.group_owner_id = ui.user_id " +
             "left join user_contact uc on gi.group_id = uc.contact_id " +
+            "where " +
+                    "(#{groupId} is null or gi.group_id like concat('%', #{groupId}, '%')) and" +
+                    "(#{groupName} is null or gi.group_name like concat('%', #{groupName}, '%')) and" +
+                    "(#{groupOwnerId} is null or gi.group_owner_id like concat('%', #{groupOwnerId}, '%')) " +
             "group by gi.group_id, gi.group_name, gi.group_owner_id, gi.create_time, gi.join_type, gi.status, ui.nick_name " +
             "order by gi.create_time desc " +
             "limit #{offset}, #{pageSize}"
     )
-    List<GroupDetails> loadGroupWithDetails(@Param("offset") int offset, @Param("pageSize") int pageSize);
+    List<GroupDetails> loadGroupWithDetails(
+            @Param("groupId") String groupId,
+            @Param("groupName") String groupName,
+            @Param("groupOwnerId") String groupOwnerId,
+            @Param("offset") int offset,
+            @Param("pageSize") int pageSize
+    );
 
     @Select("select count(*) from group_info")
     int countTotalGroups();

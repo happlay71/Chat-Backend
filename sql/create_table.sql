@@ -87,3 +87,19 @@ CREATE TABLE user_info_beauty
     UNIQUE INDEX user_info_beauty_user_id_uindex (user_id)
 )
 COMMENT '靓号';
+
+-- 创建app发布表
+CREATE TABLE app_update
+(
+    id int(11) NOT NULL AUTO_INCREMENT COMMENT '自增ID',
+    version varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '版本号',
+    update_desc varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新描述',
+    create_time datetime NULL DEFAULT NULL COMMENT '创建时间',
+    status tinyint(1) NULL DEFAULT NULL COMMENT '0:未发布 1:灰度发布 2:全网发布',
+    grayscale_uid varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '灰度uid',
+    file_type tinyint(1) NULL DEFAULT NULL COMMENT '文件类型: 0:本地文件 1:外链',
+    outer_link varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '外链地址',
+    PRIMARY KEY (id) USING BTREE,
+    UNIQUE KEY unique_version (version) USING BTREE
+)
+COMMENT='app发布';
