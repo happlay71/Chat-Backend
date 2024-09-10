@@ -5,6 +5,7 @@ import online.happlay.chat.entity.dto.AppQueryDTO;
 import online.happlay.chat.entity.dto.AppSaveDTO;
 import online.happlay.chat.entity.po.AppUpdate;
 import com.baomidou.mybatisplus.extension.service.IService;
+import online.happlay.chat.entity.vo.AppUpdateVO;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,4 +29,6 @@ public interface IAppUpdateService extends IService<AppUpdate> {
     void changeUpdate(AppSaveDTO appSaveDTO, MultipartFile file) throws IOException;
 
     void postUpdate(AppPostDTO appPostDTO);
+
+    AppUpdateVO checkUpdate(String appVersion, String uid);
 }

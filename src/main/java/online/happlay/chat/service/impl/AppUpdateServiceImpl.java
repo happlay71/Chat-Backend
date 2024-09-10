@@ -11,6 +11,7 @@ import online.happlay.chat.entity.dto.AppPostDTO;
 import online.happlay.chat.entity.dto.AppQueryDTO;
 import online.happlay.chat.entity.dto.AppSaveDTO;
 import online.happlay.chat.entity.po.AppUpdate;
+import online.happlay.chat.entity.vo.AppUpdateVO;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.enums.AppUpdateFileTypeEnum;
 import online.happlay.chat.enums.AppUpdateStatusEnum;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -144,6 +146,31 @@ public class AppUpdateServiceImpl extends ServiceImpl<AppUpdateMapper, AppUpdate
         appUpdate.setStatus(appPostDTO.getStatus());
         appUpdate.setGrayscaleUid(appPostDTO.getGrayscaleUid());
         this.updateById(appUpdate);
+    }
+
+    @Override
+    public AppUpdateVO checkUpdate(String appVersion, String uid) {
+        AppUpdate appUpdate = this.baseMapper.checkVersion(appVersion, uid);
+        if (appUpdate == null) {
+            return null;
+        }
+
+        AppUpdateVO appUpdateVO = BeanUtil.copyProperties(appUpdate, AppUpdateVO.class);
+        // 如果更新文件是本地，则查询并设置文件大小
+        if (AppUpdateFileTypeEnum.LOCAL.getType().equals(appUpdate.getFileType())) {
+            File file = new File(commonConfig.getProjectFolder() +
+                    Constants.APP_UPDATE_FOLDER + appUpdate.getId() +
+                    Constants.APP_EXE_SUFFIX);
+            appUpdateVO.setSize(file.length());
+        } else {
+            appUpdateVO.setSize(0L);
+        }
+
+        // 设置更新描述
+        appUpdateVO.setUpdateDescList(Arrays.asList(appUpdate.getUpdateDescArray()));
+        String fileName = Constants.APP_NAME + appUpdate.getVersion() + Constants.APP_EXE_SUFFIX;
+        appUpdateVO.setFileName(fileName);
+        return appUpdateVO;
     }
 
     private void saveUpdateFile(MultipartFile file, AppUpdate appUpdate) throws IOException {

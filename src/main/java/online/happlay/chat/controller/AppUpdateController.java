@@ -1,6 +1,7 @@
 package online.happlay.chat.controller;
 
 
+import cn.hutool.core.util.StrUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import online.happlay.chat.entity.dto.AppPostDTO;
 import online.happlay.chat.entity.dto.AppQueryDTO;
 import online.happlay.chat.entity.dto.AppSaveDTO;
 import online.happlay.chat.entity.po.AppUpdate;
+import online.happlay.chat.entity.vo.AppUpdateVO;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.ResponseVO;
 import online.happlay.chat.enums.AppUpdateStatusEnum;
@@ -37,7 +39,7 @@ public class AppUpdateController extends BaseController{
     private final IAppUpdateService appUpdateService;
 
     @ApiOperation("加载版本列表")
-    @GetMapping("/loadUpdateList")
+    @GetMapping("/loadList")
     @GlobalInterceptor(checkAdmin = true)
     public ResponseVO<PaginationResultVO<AppUpdate>> loadUpdateList(
             @ModelAttribute AppQueryDTO appQueryDTO
@@ -64,7 +66,7 @@ public class AppUpdateController extends BaseController{
     }
 
     @ApiOperation("删除版本")
-    @PostMapping("/delUpdate")
+    @PostMapping("/delete")
     @GlobalInterceptor(checkAdmin = true)
     public ResponseVO delUpdate(@RequestParam("id") @NotNull Integer id) {
         AppUpdate appUpdate = appUpdateService.getById(id);
@@ -77,11 +79,23 @@ public class AppUpdateController extends BaseController{
     }
 
     @ApiOperation("发布版本")
-    @PostMapping("/postUpdate")
+    @PostMapping("/post")
     @GlobalInterceptor(checkAdmin = true)
     public ResponseVO postUpdate(@ModelAttribute AppPostDTO appPostDTO) {
         appUpdateService.postUpdate(appPostDTO);
         return getSuccessResponseVO(null);
+    }
+
+    @ApiOperation("检测版本更新")
+    @PostMapping("/check")
+    @GlobalInterceptor
+    public ResponseVO<AppUpdateVO> checkUpdate(@RequestParam(value = "appVersion", required = false) String appVersion,
+                                  @RequestParam("uid") String uid) {
+        if (StrUtil.isEmpty(appVersion)) {
+            return getSuccessResponseVO(null);
+        }
+        AppUpdateVO appUpdateVO = appUpdateService.checkUpdate(appVersion, uid);
+        return getSuccessResponseVO(appUpdateVO);
     }
 
 
