@@ -4,7 +4,14 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 简单处理器，专门用来处理特定类型的消息帧
@@ -39,8 +46,41 @@ public class HandlerWebSocket extends SimpleChannelInboundHandler<TextWebSocketF
         log.info("收到消息{}", textWebSocketFrame.text());
     }
 
+    /**
+     * 用于处理 Netty 中的用户自定义事件。它特别关注 WebSocket 握手完成的事件，并在握手完成后执行一些操作
+     * @param ctx
+     * @param evt
+     * @throws Exception
+     */
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        super.userEventTriggered(ctx, evt);
+        // WebSocketServerProtocolHandler.HandshakeComplete 类型的事件表明 WebSocket 的握手已经成功完成
+        if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
+            WebSocketServerProtocolHandler.HandshakeComplete complete = (WebSocketServerProtocolHandler.HandshakeComplete) evt;
+            String url = complete.requestUri();
+            String token = getToken(url);
+            if (token == null) {
+                ctx.channel().close();
+                return;
+            }
+            log.info("url{}", url);
+            log.info("token{}", token);
+        }
+    }
+
+    private String getToken(String url) {
+        try {
+            URI uri = new URI(url);
+            String query = uri.getQuery();
+            if (query != null) {
+                Map<String, String> queryParams = Stream.of(query.split("&"))
+                        .map(param -> param.split("="))
+                        .collect(Collectors.toMap(parts -> parts[0], parts -> parts.length > 1 ? parts[1] : ""));
+                return queryParams.get("token");
+            }
+        } catch (URISyntaxException e) {
+            log.error("URL语法错误：{}", url, e);
+        }
+        return null;
     }
 }
