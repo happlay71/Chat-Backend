@@ -3,7 +3,6 @@ package online.happlay.chat.websocket.netty;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.sctp.nio.NioSctpServerChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
@@ -12,25 +11,47 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
+import online.happlay.chat.config.CommonConfig;
+import online.happlay.chat.websocket.netty.handler.HandlerHeartBeat;
+import online.happlay.chat.websocket.netty.handler.HandlerWebSocket;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
 // TODO netty待学习
 @Slf4j
 @Component
-public class NettyWebSocketStarter {
+public class NettyWebSocketStarter implements Runnable{
 
     // 专门用于接受客户端连接的线程组
     private static EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     // 用于处理已连接的客户端的 I/O 操作
     private static EventLoopGroup workGroup = new NioEventLoopGroup();
 
-    public static void main(String[] args) {
-        ServerBootstrap serverBootstrap = new ServerBootstrap();
-        // 为服务器配置两个线程组，一个处理连接请求，另一个处理 I/O 操作
-        serverBootstrap.group(bossGroup, workGroup);
+    @Resource
+    private HandlerWebSocket handlerWebSocket;
+
+    @Resource
+    private CommonConfig commonConfig;
+
+    @PreDestroy
+    public void close() {
+        // shutdownGracefully 用来确保在关闭时不会立即中断正在处理的任务，而是允许它们完成
+        bossGroup.shutdownGracefully();
+        workGroup.shutdownGracefully();
+    }
+
+    /**
+     * 另起一个线程，防止阻塞主线程
+     */
+    @Override
+    public void run() {
         try {
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            // 为服务器配置两个线程组，一个处理连接请求，另一个处理 I/O 操作
+            serverBootstrap.group(bossGroup, workGroup);
             // 指定服务器使用的通道类型，表示服务器使用 TCP（传输控制协议）
             serverBootstrap.channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.DEBUG)).childHandler(new ChannelInitializer() {  // 配置子通道（即每个连接）的处理器
@@ -42,7 +63,7 @@ public class NettyWebSocketStarter {
                             // 将 HTTP 的多个部分聚合成完整的 HTTP 消息
                             pipeline.addLast(new HttpObjectAggregator(64 * 1024));
                             // 用于检测通道的空闲状态
-                            pipeline.addLast(new IdleStateHandler(6, 0, 0, TimeUnit.SECONDS));
+                            pipeline.addLast(new IdleStateHandler(60, 0, 0, TimeUnit.SECONDS));
                             // 自定义的心跳处理器，用于处理心跳超时事件
                             pipeline.addLast(new HandlerHeartBeat());
                             /**
@@ -57,12 +78,12 @@ public class NettyWebSocketStarter {
                              */
                             pipeline.addLast(new WebSocketServerProtocolHandler("/ws", null, true,
                                     64 * 1024, true, true, 10000L));
-                            pipeline.addLast(new HandlerWebSocket());
+                            pipeline.addLast(handlerWebSocket);
                         }
                     });
             // 绑定端口并启动服务器
-            ChannelFuture channelFuture = serverBootstrap.bind(5051).sync();
-            log.info("netty启动成功！");
+            ChannelFuture channelFuture = serverBootstrap.bind(commonConfig.getWsPort()).sync();
+            log.info("netty启动成功！端口：{}", commonConfig.getWsPort());
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             log.info("netty启动失败……");
@@ -71,4 +92,5 @@ public class NettyWebSocketStarter {
             workGroup.shutdownGracefully();
         }
     }
+
 }

@@ -9,6 +9,7 @@ import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.UserQueryDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.enums.*;
 import online.happlay.chat.entity.po.UserInfo;
@@ -17,6 +18,7 @@ import online.happlay.chat.entity.vo.UserInfoVO;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserInfoMapper;
 import online.happlay.chat.redis.RedisComponent;
+import online.happlay.chat.service.IUserContactService;
 import online.happlay.chat.service.IUserInfoBeautyService;
 import online.happlay.chat.service.IUserInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -31,6 +33,8 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static online.happlay.chat.constants.Constants.LENGTH_20;
 
@@ -47,6 +51,8 @@ import static online.happlay.chat.constants.Constants.LENGTH_20;
 public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> implements IUserInfoService {
 
     private final IUserInfoBeautyService userInfoBeautyService;
+
+    private final IUserContactService userContactService;
 
     private final CommonConfig commonConfig;
 
@@ -118,8 +124,23 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
             throw new BusinessException("账号已禁用");
         }
 
-        // TODO 查询我的群组
-        // TODO 查询我的联系人
+        // 查询联系人
+        LambdaQueryWrapper<UserContact> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserContact::getUserId, userInfo.getUserId())
+                .eq(UserContact::getStatus, UserContactStatusEnum.FRIEND.getStatus());
+        List<UserContact> userContacts = userContactService.list(queryWrapper);
+
+        // 获取联系人ID
+        List<String> contactIdList = userContacts.stream()
+                .map(UserContact::getContactId).collect(Collectors.toList());
+
+
+        // 存入redis缓存
+        redisComponent.cleanUserContact(userInfo.getUserId());
+        if (!contactIdList.isEmpty()) {
+            redisComponent.addUserContactBatch(userInfo.getUserId(), contactIdList);
+        }
+
         UserTokenDTO userTokenDTO = getUserTokenDTO(userInfo);
 
         // 获取心跳

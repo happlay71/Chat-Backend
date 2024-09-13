@@ -1,12 +1,20 @@
-package online.happlay.chat.websocket.netty;
+package online.happlay.chat.websocket.netty.handler;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
+import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.redis.RedisComponent;
+import online.happlay.chat.websocket.netty.ChannelContextUtils;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -18,12 +26,20 @@ import java.util.stream.Stream;
  * TextWebSocketFrame，即文本消息帧
  */
 @Slf4j
+@ChannelHandler.Sharable
+@Component
 public class HandlerWebSocket extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
+    @Resource
+    private RedisComponent redisComponent;
+
+    @Resource
+    private ChannelContextUtils channelContextUtils;
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("有连接断开……");
+        channelContextUtils.removeContext(ctx.channel());
     }
 
     @Override
@@ -43,7 +59,10 @@ public class HandlerWebSocket extends SimpleChannelInboundHandler<TextWebSocketF
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, TextWebSocketFrame textWebSocketFrame) throws Exception {
 
         Channel channel = channelHandlerContext.channel();
-        log.info("收到消息{}", textWebSocketFrame.text());
+        Attribute<String> attribute = channel.attr(AttributeKey.valueOf(channel.id().toString()));
+        String userId = attribute.get();
+        log.info("收到userId{}消息：{}", userId, textWebSocketFrame.text());
+        redisComponent.saveHeartBeat(userId);
     }
 
     /**
@@ -63,8 +82,12 @@ public class HandlerWebSocket extends SimpleChannelInboundHandler<TextWebSocketF
                 ctx.channel().close();
                 return;
             }
-            log.info("url{}", url);
-            log.info("token{}", token);
+            UserTokenDTO userTokenDTO = redisComponent.getUserTokenDTO(token);
+            if (null == userTokenDTO) {
+                ctx.channel().close();
+                return;
+            }
+            channelContextUtils.addContext(userTokenDTO.getUserId(), ctx.channel());
         }
     }
 

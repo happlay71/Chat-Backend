@@ -103,3 +103,47 @@ CREATE TABLE app_update
     UNIQUE KEY unique_version (version) USING BTREE
 )
 COMMENT='app发布';
+
+CREATE TABLE chat_session
+(
+    session_id varchar(32) NOT NULL COMMENT '会话ID',
+    last_message varchar(500) NULL DEFAULT NULL COMMENT '最后接受的信息',
+    last_receive_time bigint(11) NULL DEFAULT NULL COMMENT '最后接受消息时间(毫秒)',
+    PRIMARY KEY (session_id) USING BTREE
+)
+COMMENT='会话信息';
+
+CREATE TABLE chat_message
+(
+    message_id bigint(20) NOT NULL AUTO_INCREMENT COMMENT '消息自增ID',
+    session_id varchar(32) NOT NULL COMMENT '会话ID',
+    message_type tinyint(1) NOT NULL COMMENT '消息类型',
+    message_content varchar(500) NULL DEFAULT NULL COMMENT '消息内容',
+    send_user_id varchar(12) NULL DEFAULT NULL COMMENT '发送人ID',
+    send_user_nick_name varchar(20) NULL DEFAULT NULL COMMENT '发送人昵称',
+    send_time bigint(20) NULL DEFAULT NULL COMMENT '发送时间',
+    contact_id varchar(12) NOT NULL COMMENT '接收联系人ID',
+    contact_type tinyint(1) NULL DEFAULT NULL COMMENT '联系人类型',
+    file_size bigint(20) NULL DEFAULT NULL COMMENT '文件大小',
+    file_name varchar(200) NULL DEFAULT NULL COMMENT '文件名',
+    file_type tinyint(1) NULL DEFAULT NULL COMMENT '文件类型',
+    status tinyint(1) NULL DEFAULT 1 COMMENT '状态: 0:正在发送 1:已发送',
+    PRIMARY KEY (message_id) USING BTREE,
+    INDEX idx_session_id (session_id) USING BTREE,
+    INDEX idx_send_user_id (send_user_id) USING BTREE,
+    INDEX idx_receive_contact_id (contact_id) USING BTREE,
+    INDEX idx_send_time (send_time) USING BTREE
+)
+COMMENT='聊天消息表';
+
+CREATE TABLE chat_session_user
+(
+    user_id varchar(12) NOT NULL COMMENT '用户ID',
+    contact_id varchar(12) NOT NULL COMMENT '联系人ID',
+    session_id varchar(32) NOT NULL COMMENT '会话ID',
+    contact_name varchar(20) NULL DEFAULT NULL COMMENT '联系人名称',
+    PRIMARY KEY (user_id, contact_id) USING BTREE,
+    INDEX idx_user_id (user_id) USING BTREE,
+    INDEX idx_session_id (session_id) USING BTREE
+)
+COMMENT='会话用户';

@@ -6,6 +6,8 @@ import online.happlay.chat.entity.dto.SysSettingDTO;
 import online.happlay.chat.entity.dto.UserTokenDTO;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 import static online.happlay.chat.constants.Constants.*;
 
 @Component
@@ -23,13 +25,26 @@ public class RedisComponent {
         return (Long) redisUtils.get(REDIS_KEY_WS_USER_HEART_BEAT + userId);
     }
 
+    public void saveHeartBeat(String userId) {
+        redisUtils.set(REDIS_KEY_WS_USER_HEART_BEAT + userId, System.currentTimeMillis(), REDIS_KEY_EXPIRES_HEART_BEAT);
+    }
+
+    public void removeUserHeartBeat(String userId) {
+        redisUtils.del(REDIS_KEY_WS_USER_HEART_BEAT + userId);
+    }
+
     /**
      * 保存token到redis
      * @param userTokenDTO
      */
     public void saveUserTokenDTO(UserTokenDTO userTokenDTO) {
         redisUtils.set(REDIS_KEY_WS_TOKEN + userTokenDTO.getToken(), userTokenDTO, REDIS_TOKEN_OUTTIME * 2);
-        redisUtils.set(REDIS_KEY_WS_TOKEN_USERID + userTokenDTO.getToken(), userTokenDTO.getToken(), REDIS_TOKEN_OUTTIME * 2);
+        redisUtils.set(REDIS_KEY_WS_TOKEN_USERID + userTokenDTO.getUserId(), userTokenDTO.getToken(), REDIS_TOKEN_OUTTIME * 2);
+    }
+
+    public UserTokenDTO getUserTokenDTO(String token) {
+        UserTokenDTO userTokenDTO = (UserTokenDTO) redisUtils.get(REDIS_KEY_WS_TOKEN + token);
+        return userTokenDTO;
     }
 
     public SysSettingDTO getSysSetting() {
@@ -39,5 +54,20 @@ public class RedisComponent {
 
     public void saveSysSetting(SysSettingDTO sysSettingDTO) {
         redisUtils.set(REDIS_KEY_SYS_SETTING, sysSettingDTO);
+    }
+
+    // 清空联系人
+    public void cleanUserContact(String userId) {
+        redisUtils.del(REDIS_KEY_USER_CONTACT + userId);
+    }
+
+    // 获取联系人
+    public List<String> getUserContactList(String userId) {
+        return (List<String>) redisUtils.get(REDIS_KEY_USER_CONTACT + userId);
+    }
+
+    // 批量添加联系人
+    public void addUserContactBatch(String userId, List<String> contactIdList) {
+        redisUtils.lSet(REDIS_KEY_USER_CONTACT + userId, contactIdList, REDIS_TOKEN_OUTTIME);
     }
 }
