@@ -1,8 +1,8 @@
 package online.happlay.chat.service;
 
-import online.happlay.chat.entity.dto.AppPostDTO;
-import online.happlay.chat.entity.dto.AppQueryDTO;
-import online.happlay.chat.entity.dto.AppSaveDTO;
+import online.happlay.chat.entity.dto.appUpdate.AppPostDTO;
+import online.happlay.chat.entity.dto.appUpdate.AppQueryDTO;
+import online.happlay.chat.entity.dto.appUpdate.AppSaveDTO;
 import online.happlay.chat.entity.po.AppUpdate;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.AppUpdateVO;

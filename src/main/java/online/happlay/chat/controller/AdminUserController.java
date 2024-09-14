@@ -5,7 +5,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
-import online.happlay.chat.entity.dto.UserQueryDTO;
+import online.happlay.chat.entity.dto.user.UserQueryDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.ResponseVO;

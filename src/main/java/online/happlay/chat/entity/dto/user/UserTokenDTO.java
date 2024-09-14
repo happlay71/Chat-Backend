@@ -1,4 +1,4 @@
-package online.happlay.chat.entity.dto;
+package online.happlay.chat.entity.dto.user;
 
 import lombok.Data;
 

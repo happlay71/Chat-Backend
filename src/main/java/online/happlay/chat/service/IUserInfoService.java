@@ -1,7 +1,7 @@
 package online.happlay.chat.service;
 
-import online.happlay.chat.entity.dto.UserQueryDTO;
-import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.dto.user.UserQueryDTO;
+import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.PaginationResultVO;

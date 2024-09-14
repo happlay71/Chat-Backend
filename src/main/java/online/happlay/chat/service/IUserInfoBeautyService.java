@@ -1,6 +1,6 @@
 package online.happlay.chat.service;
 
-import online.happlay.chat.entity.dto.UserBeautyQueryDTO;
+import online.happlay.chat.entity.dto.userBeauty.UserBeautyQueryDTO;
 import online.happlay.chat.entity.po.UserInfoBeauty;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.PaginationResultVO;

@@ -1,13 +1,10 @@
 package online.happlay.chat.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import online.happlay.chat.entity.dto.SysSettingDTO;
-import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContact;
 import online.happlay.chat.entity.po.UserContactApply;
-import online.happlay.chat.entity.query.UserContactApplyQuery;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.UserContactApplyLoadVO;
 import online.happlay.chat.enums.*;
@@ -24,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 /**

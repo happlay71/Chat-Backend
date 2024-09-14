@@ -1,7 +1,6 @@
 package online.happlay.chat.websocket.netty;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
@@ -9,10 +8,13 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
-import online.happlay.chat.entity.dto.WsInitDataDTO;
+import online.happlay.chat.entity.dto.message.MessageSendDTO;
+import online.happlay.chat.entity.vo.WsInitDataVO;
 import online.happlay.chat.entity.po.ChatSessionUser;
 import online.happlay.chat.entity.po.UserInfo;
+import online.happlay.chat.enums.MessageTypeEnum;
 import online.happlay.chat.enums.UserContactTypeEnum;
+import online.happlay.chat.mapper.ChatSessionUserMapper;
 import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.IChatSessionUserService;
 import online.happlay.chat.service.IUserInfoService;
@@ -39,6 +41,9 @@ public class ChannelContextUtils {
 
     @Resource
     private IChatSessionUserService chatSessionUserService;
+
+    @Resource
+    private ChatSessionUserMapper chatSessionUserMapper;
 
     @Resource
     private RedisComponent redisComponent;
@@ -89,14 +94,12 @@ public class ChannelContextUtils {
         }
 
         /**
-         * 1.查询所有会话信息 TODO 未完成
+         * 1.查询所有会话信息
          */
-        QueryWrapper<ChatSessionUser> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userId", userId);
-        queryWrapper.orderByDesc("lastReceiveTime");
-        List<ChatSessionUser> chatSessionUserList = chatSessionUserService.list(queryWrapper);
 
-        WsInitDataDTO wsInitVO = new WsInitDataDTO();
+        List<ChatSessionUser> chatSessionUserList = chatSessionUserMapper.selectChatSessions(userId);
+
+        WsInitDataVO wsInitVO = new WsInitDataVO();
         wsInitVO.setChatSessionUserList(chatSessionUserList);
 
         /**
@@ -106,13 +109,31 @@ public class ChannelContextUtils {
         /**
          * 3.查询好友申请
          */
+
+        // 发送消息
+        MessageSendDTO messageSendDTO = new MessageSendDTO();
+        messageSendDTO.setMessageType(MessageTypeEnum.INIT.getType());
+        messageSendDTO.setContactId(userId);
+        messageSendDTO.setExtendData(wsInitVO);
+
+        sendMsg(messageSendDTO, userId);
     }
 
-    // 发送消息
-    public static void sendMsg() {
-
+    /**
+     * TODO 发送消息
+     * @param messageSendDTO
+     * @param receiveId 接收消息的用户的id
+     */
+    private static void sendMsg(MessageSendDTO messageSendDTO, String receiveId) {
+        // TODO 26-17:41 JSON
     }
 
+
+    /**
+     * 添加进群聊通道
+     * @param groupId
+     * @param channel
+     */
     private void addToGroup(String groupId, Channel channel) {
         ChannelGroup group = GROUP_CONTEXT_MAP.get(groupId);
         if (group == null) {
@@ -127,6 +148,10 @@ public class ChannelContextUtils {
         group.add(channel);
     }
 
+    /**
+     * 删除通道
+     * @param channel
+     */
     public void removeContext(Channel channel) {
         // 获取userId
         Attribute<String> attribute = channel.attr(AttributeKey.valueOf(channel.id().toString()));

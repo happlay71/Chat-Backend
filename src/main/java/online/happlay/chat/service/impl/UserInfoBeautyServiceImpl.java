@@ -3,7 +3,7 @@ package online.happlay.chat.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import online.happlay.chat.entity.dto.UserBeautyQueryDTO;
+import online.happlay.chat.entity.dto.userBeauty.UserBeautyQueryDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.enums.BeautyAccountStatusEnum;

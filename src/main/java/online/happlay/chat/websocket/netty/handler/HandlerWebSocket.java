@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
-import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.websocket.netty.ChannelContextUtils;
 import org.springframework.stereotype.Component;

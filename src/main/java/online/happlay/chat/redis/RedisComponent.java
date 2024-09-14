@@ -1,9 +1,8 @@
 package online.happlay.chat.redis;
 
 import lombok.RequiredArgsConstructor;
-import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.SysSettingDTO;
-import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

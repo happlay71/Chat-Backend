@@ -1,4 +1,4 @@
-package online.happlay.chat.entity.dto;
+package online.happlay.chat.entity.dto.group;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

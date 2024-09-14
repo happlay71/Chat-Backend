@@ -1,7 +1,7 @@
 package online.happlay.chat.service;
 
-import online.happlay.chat.entity.dto.LoadGroupQueryDTO;
-import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.dto.group.LoadGroupQueryDTO;
+import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.GroupInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
 import online.happlay.chat.entity.vo.GroupDetails;

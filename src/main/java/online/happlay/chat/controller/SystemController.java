@@ -8,17 +8,11 @@ import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.SysSettingDTO;
-import online.happlay.chat.entity.dto.UserQueryDTO;
-import online.happlay.chat.entity.po.UserInfo;
-import online.happlay.chat.entity.vo.PaginationResultVO;
 import online.happlay.chat.entity.vo.ResponseVO;
 import online.happlay.chat.redis.RedisComponent;
-import online.happlay.chat.service.IUserInfoService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 

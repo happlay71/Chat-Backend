@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.constants.Constants;
-import online.happlay.chat.entity.dto.UserTokenDTO;
+import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.vo.ResponseVO;
 import online.happlay.chat.entity.vo.UserInfoVO;

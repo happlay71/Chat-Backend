@@ -1,4 +1,4 @@
-package online.happlay.chat.entity.dto;
+package online.happlay.chat.entity.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class WsInitDataDTO {
+public class WsInitDataVO {
     private List<ChatSessionUser> chatSessionUserList;
     private List<ChatMessage> chatMessageList;
     // 申请条数

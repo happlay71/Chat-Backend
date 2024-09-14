@@ -1,9 +1,12 @@
 package online.happlay.chat.entity.po;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
+
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -22,7 +25,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("chat_session_user")
-@ApiModel(value="ChatSessionUser对象", description="会话用户")
+@ApiModel(value = "ChatSessionUser对象", description = "会话用户")
 public class ChatSessionUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -39,6 +42,18 @@ public class ChatSessionUser implements Serializable {
 
     @ApiModelProperty(value = "联系人名称")
     private String contactName;
+
+    @ApiModelProperty(value = "最后接收的消息")
+    @TableField(exist = false)
+    private String lastMessage;
+
+    @ApiModelProperty(value = "最后接收消息时间(毫秒)")
+    @TableField(exist = false)
+    private String lastReceiveTime;
+
+    @ApiModelProperty(value = "群组人数")
+    @TableField(exist = false)
+    private String memberCount;
 
 
 }

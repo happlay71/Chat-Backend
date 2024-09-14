@@ -1,4 +1,4 @@
-package online.happlay.chat.entity.dto;
+package online.happlay.chat.entity.dto.group;
 
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
