@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class WsInitDataVO {
-    private List<ChatSessionUser> chatSessionUserList;
+    private List<ChatSessionUser> chatSessionList;
     private List<ChatMessage> chatMessageList;
     // 申请条数
     private Integer applyCount;

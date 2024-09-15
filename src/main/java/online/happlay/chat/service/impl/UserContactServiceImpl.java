@@ -9,22 +9,24 @@ import lombok.RequiredArgsConstructor;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.SysSettingDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
-import online.happlay.chat.entity.po.UserContactApply;
-import online.happlay.chat.entity.vo.UserContactSearchResultVO;
-import online.happlay.chat.entity.po.GroupInfo;
-import online.happlay.chat.entity.po.UserContact;
-import online.happlay.chat.entity.po.UserInfo;
-import online.happlay.chat.entity.vo.UserInfoVO;
-import online.happlay.chat.entity.vo.UserLoadContactVO;
+import online.happlay.chat.entity.po.*;
+import online.happlay.chat.entity.vo.userContact.UserContactSearchResultVO;
+import online.happlay.chat.entity.vo.user.UserInfoVO;
+import online.happlay.chat.entity.vo.user.UserLoadContactVO;
 import online.happlay.chat.enums.*;
+import online.happlay.chat.enums.group.GroupStatusEnum;
+import online.happlay.chat.enums.message.MessageStatusEnum;
+import online.happlay.chat.enums.message.MessageTypeEnum;
+import online.happlay.chat.enums.userContact.JoinTypeEnum;
+import online.happlay.chat.enums.userContact.UserContactStatusEnum;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
+import online.happlay.chat.enums.userContactApply.UserContactApplyStatusEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserContactMapper;
 import online.happlay.chat.redis.RedisComponent;
-import online.happlay.chat.service.IGroupInfoService;
-import online.happlay.chat.service.IUserContactApplyService;
-import online.happlay.chat.service.IUserContactService;
+import online.happlay.chat.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import online.happlay.chat.service.IUserInfoService;
+import online.happlay.chat.utils.StringTools;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +54,14 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
 
     private final IUserContactApplyService userContactApplyService;
 
+    private final IChatSessionUserService chatSessionUserService;
+
+    private final IChatSessionService chatSessionService;
+
+    private final IChatMessageService chatMessageService;
+
     private final RedisComponent redisComponent;
+
 
     @Resource
     @Lazy
@@ -355,6 +364,66 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         // TODO 从好友的列表缓存中删除我
     }
 
+    /**
+     * 添加机器人好友
+     * @param userId
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addContactForRobot(String userId) {
+        SysSettingDTO sysSettingDTO = redisComponent.getSysSetting();
+        String contactId = sysSettingDTO.getRobotUid();
+        String contactName = sysSettingDTO.getRobotNicName();
+        String sendMessage = sysSettingDTO.getRobotWelcome();
+        sendMessage = cleanHtmlTag(sendMessage);
+        // 增加机器人好友
+        LocalDateTime time = LocalDateTime.now();
+        UserContact userContact = new UserContact();
+        userContact.setUserId(userId);
+        userContact.setContactId(contactId);
+        userContact.setContactType(UserContactTypeEnum.USER.getType());
+        userContact.setCreateTime(time);
+        userContact.setLastUpdateTime(time);
+        userContact.setStatus(UserContactStatusEnum.FRIEND.getStatus());
+        this.save(userContact);
+
+        // 增加会话信息
+        String sessionId = StringTools.getChatSessionIdForUser(new String[]{userId, contactId});
+        ChatSession chatSession = new ChatSession();
+        chatSession.setSessionId(sessionId);
+        chatSession.setLastMessage(sendMessage);
+        chatSession.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatSessionService.save(chatSession);
+
+        // 增加会话人信息
+        ChatSessionUser chatSessionUser = new ChatSessionUser();
+        chatSessionUser.setUserId(userId);
+        chatSessionUser.setContactId(contactId);
+        chatSessionUser.setContactName(contactName);
+        chatSessionUser.setSessionId(sessionId);
+        chatSessionUserService.save(chatSessionUser);
+
+        // 增加聊天消息
+        ChatMessage chatMessage = new ChatMessage();
+        chatMessage.setSessionId(sessionId);
+        chatMessage.setMessageType(MessageTypeEnum.CHAT.getType());
+        chatMessage.setSendUserId(contactId);
+        chatMessage.setSendUserNickName(contactName);
+        chatMessage.setMessageContent(sendMessage);
+        chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatMessage.setContactId(userId);  // 对于机器人来说联系人是该用户
+        chatMessage.setContactType(UserContactTypeEnum.USER.getType());
+        chatMessage.setStatus(MessageStatusEnum.SENDEND.getStatus());
+        chatMessageService.save(chatMessage);
+
+    }
+
+    /**
+     * 获取好友详细信息
+     * @param userToken
+     * @param contactId
+     * @return
+     */
     @Override
     public UserInfoVO getContactUserInfo(UserTokenDTO userToken, String contactId) {
 
@@ -374,5 +443,22 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         UserInfoVO userInfoVO = BeanUtil.copyProperties(userInfo, UserInfoVO.class);
 
         return userInfoVO;
+    }
+
+    /**
+     * 防止HTML注入
+     * @param content
+     * @return
+     */
+    public static String cleanHtmlTag(String content) {
+        if (StrUtil.isEmpty(content)) {
+            return content;
+        }
+        // 将字符串中的所有 < 替换为 &lt;。这是为了防止 HTML 注入攻击，或者防止浏览器错误地将某些内容识别为 HTML 标签
+        content = content.replace("<", "&lt;");
+        // 将换行符替换为 <br> 标签
+        content = content.replace("\r\n", "<br>");
+        content = content.replace("\n", "<br>");
+        return content;
     }
 }

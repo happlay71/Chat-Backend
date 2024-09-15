@@ -8,7 +8,7 @@ import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.SysSettingDTO;
-import online.happlay.chat.entity.vo.ResponseVO;
+import online.happlay.chat.entity.vo.common.ResponseVO;
 import online.happlay.chat.redis.RedisComponent;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

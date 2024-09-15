@@ -2,7 +2,7 @@ package online.happlay.chat.mapper;
 
 import online.happlay.chat.entity.po.GroupInfo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import online.happlay.chat.entity.vo.GroupDetails;
+import online.happlay.chat.entity.vo.group.GroupDetails;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

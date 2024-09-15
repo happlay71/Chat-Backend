@@ -60,9 +60,9 @@ public class RedisComponent {
         redisUtils.del(REDIS_KEY_USER_CONTACT + userId);
     }
 
-    // 获取联系人
+    // 获取列表中的联系人
     public List<String> getUserContactList(String userId) {
-        return (List<String>) redisUtils.get(REDIS_KEY_USER_CONTACT + userId);
+        return redisUtils.lGet(REDIS_KEY_USER_CONTACT + userId, 0, -1);
     }
 
     // 批量添加联系人

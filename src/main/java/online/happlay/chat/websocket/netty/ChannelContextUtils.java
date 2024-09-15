@@ -1,30 +1,35 @@
 package online.happlay.chat.websocket.netty;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import online.happlay.chat.entity.dto.message.MessageSendDTO;
+import online.happlay.chat.entity.po.*;
 import online.happlay.chat.entity.vo.WsInitDataVO;
-import online.happlay.chat.entity.po.ChatSessionUser;
-import online.happlay.chat.entity.po.UserInfo;
-import online.happlay.chat.enums.MessageTypeEnum;
-import online.happlay.chat.enums.UserContactTypeEnum;
+import online.happlay.chat.enums.message.MessageTypeEnum;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
+import online.happlay.chat.enums.userContactApply.UserContactApplyStatusEnum;
 import online.happlay.chat.mapper.ChatSessionUserMapper;
 import online.happlay.chat.redis.RedisComponent;
-import online.happlay.chat.service.IChatSessionUserService;
-import online.happlay.chat.service.IUserInfoService;
+import online.happlay.chat.service.*;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static online.happlay.chat.constants.Constants.MIL_LIS_SECONDS_3DAYS_AGO;
 
@@ -38,9 +43,12 @@ public class ChannelContextUtils {
 
     @Resource
     private IUserInfoService userInfoService;
+    
+    @Resource
+    private IUserContactApplyService userContactApplyService;
 
     @Resource
-    private IChatSessionUserService chatSessionUserService;
+    private IChatMessageService chatMessageService;
 
     @Resource
     private ChatSessionUserMapper chatSessionUserMapper;
@@ -54,78 +62,120 @@ public class ChannelContextUtils {
      * @param channel
      */
     public void addContext(String userId, Channel channel) {
-        // 获取通道的 channelId
-        String channelId = channel.id().toString();
-        log.info("channelId: {}", channelId);
-        // AttributeKey 是 Netty 中用于在 Channel 上存储属性的键
-        AttributeKey attributeKey = null;
-        if (!AttributeKey.exists(channelId)) {
-            attributeKey = AttributeKey.newInstance(channelId);
-        } else {
-            attributeKey = AttributeKey.valueOf(channelId);
-        }
-        // 为通道绑定 userId
-        channel.attr(attributeKey).set(userId);
-
-        // 存入群组
-        List<String> userContactList = redisComponent.getUserContactList(userId);
-        for (String groupId : userContactList) {
-            if (groupId.startsWith(UserContactTypeEnum.GROUP.getPrefix())) {
-                addToGroup(groupId, channel);
+        try {
+            // 获取通道的 channelId
+            String channelId = channel.id().toString();
+            log.info("channelId: {}", channelId);
+            // AttributeKey 是 Netty 中用于在 Channel 上存储属性的键
+            AttributeKey attributeKey = null;
+            if (!AttributeKey.exists(channelId)) {
+                attributeKey = AttributeKey.newInstance(channelId);
+            } else {
+                attributeKey = AttributeKey.valueOf(channelId);
             }
+            // 为通道绑定 userId
+            channel.attr(attributeKey).set(userId);
+
+            // 存入群组
+            List<String> userContactList = redisComponent.getUserContactList(userId);
+            for (String groupId : userContactList) {
+                if (groupId.startsWith(UserContactTypeEnum.GROUP.getPrefix())) {
+                    addToGroup(groupId, channel);
+                }
+            }
+
+            USER_CONTEXT_MAP.put(userId, channel);
+            redisComponent.saveHeartBeat(userId);
+
+            // 更新用户最后连接时间
+            UserInfo user = userInfoService.getById(userId);
+            if (user != null) {
+                user.setLastLoginTime(LocalDateTime.now());
+                userInfoService.updateById(user);
+            } else {
+                log.warn("未找到用户: {}", userId);
+            }
+
+            // 给用户发送消息
+            Long sourceLastOfTime = user.getLastOffTime();
+            Long lastOffTime = sourceLastOfTime;
+            if (sourceLastOfTime != null && System.currentTimeMillis() - MIL_LIS_SECONDS_3DAYS_AGO > sourceLastOfTime) {
+                lastOffTime = MIL_LIS_SECONDS_3DAYS_AGO;
+            }
+
+            /**
+             * 1.查询所有会话信息
+             */
+
+            List<ChatSessionUser> chatSessionUserList = chatSessionUserMapper.selectChatSessions(userId);
+
+            WsInitDataVO wsInitVO = new WsInitDataVO();
+            wsInitVO.setChatSessionList(chatSessionUserList);
+
+            /**
+             * 2.查询聊天记录-从redis获取
+             */
+            List<String> groupIdList = userContactList.stream()
+                    .filter(item -> item.startsWith(UserContactTypeEnum.GROUP.getPrefix())).collect(Collectors.toList());
+
+            if (!groupIdList.contains(userId)) {
+                groupIdList.add(userId); // 将自己作为接收人id填入集合
+            }
+
+            // 根据集合的id查询会话信息
+            LambdaQueryWrapper<ChatMessage> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.in(ChatMessage::getContactId, groupIdList);
+            queryWrapper.ge(ChatMessage::getSendTime, lastOffTime);
+            List<ChatMessage> chatMessageList = chatMessageService.list(queryWrapper);
+
+            wsInitVO.setChatMessageList(chatMessageList);
+
+            /**
+             * 3.查询好友申请-在离线后发送的未处理的申请信息
+             */
+            LambdaQueryWrapper<UserContactApply> applyQuery = new LambdaQueryWrapper<>();
+            applyQuery.eq(UserContactApply::getReceiveUserId, userId)
+                    .eq(UserContactApply::getStatus, UserContactApplyStatusEnum.INIT.getStatus())
+                    .ge(UserContactApply::getLastApplyTime, lastOffTime);
+
+            Integer count = Math.toIntExact(userContactApplyService.count(applyQuery));
+            wsInitVO.setApplyCount(count);
+
+            // 发送消息
+            MessageSendDTO messageSendDTO = new MessageSendDTO();
+            messageSendDTO.setMessageType(MessageTypeEnum.INIT.getType());
+            messageSendDTO.setContactId(userId);
+            messageSendDTO.setExtendData(wsInitVO);
+
+            sendMsg(messageSendDTO, userId);
+        } catch (Exception e) {
+            log.error("链接初始化失败", e);
         }
-
-        USER_CONTEXT_MAP.put(userId, channel);
-        redisComponent.saveHeartBeat(userId);
-
-        // 更新用户最后连接时间
-        UserInfo user = userInfoService.getById(userId);
-        if (user != null) {
-            user.setLastLoginTime(LocalDateTime.now());
-            userInfoService.updateById(user);
-        } else {
-            log.warn("未找到用户: {}", userId);
-        }
-
-        // 给用户发送消息
-        Long lastOffTime = user.getLastOffTime();
-        if (lastOffTime != null && System.currentTimeMillis() - MIL_LIS_SECONDS_3DAYS_AGO > lastOffTime) {
-            lastOffTime = MIL_LIS_SECONDS_3DAYS_AGO;
-        }
-
-        /**
-         * 1.查询所有会话信息
-         */
-
-        List<ChatSessionUser> chatSessionUserList = chatSessionUserMapper.selectChatSessions(userId);
-
-        WsInitDataVO wsInitVO = new WsInitDataVO();
-        wsInitVO.setChatSessionUserList(chatSessionUserList);
-
-        /**
-         * 2.查询聊天记录
-         */
-
-        /**
-         * 3.查询好友申请
-         */
-
-        // 发送消息
-        MessageSendDTO messageSendDTO = new MessageSendDTO();
-        messageSendDTO.setMessageType(MessageTypeEnum.INIT.getType());
-        messageSendDTO.setContactId(userId);
-        messageSendDTO.setExtendData(wsInitVO);
-
-        sendMsg(messageSendDTO, userId);
     }
 
     /**
-     * TODO 发送消息
+     * 发送消息
      * @param messageSendDTO
      * @param receiveId 接收消息的用户的id
      */
     private static void sendMsg(MessageSendDTO messageSendDTO, String receiveId) {
-        // TODO 26-17:41 JSON
+        // TODO 26-17:41 JSONUTILS
+        if (receiveId == null) {
+            return;
+        }
+
+        Channel sendChannel = USER_CONTEXT_MAP.get(receiveId);
+        if (sendChannel == null) {
+            return;
+        }
+
+        /**
+         * 在一对一聊天的场景下，contactId 不再是用来表示接收方的，
+         * 而是用来标识与这条消息相关的最重要联系人，也就是发送者。
+         */
+        messageSendDTO.setContactId(messageSendDTO.getSendUserId());
+        messageSendDTO.setContactName(messageSendDTO.getSendUserNickName());
+        sendChannel.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(messageSendDTO)));
     }
 
 

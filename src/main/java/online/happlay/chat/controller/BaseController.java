@@ -3,7 +3,7 @@ package online.happlay.chat.controller;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.enums.ResponseCodeEnum;
-import online.happlay.chat.entity.vo.ResponseVO;
+import online.happlay.chat.entity.vo.common.ResponseVO;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.redis.RedisUtils;
 

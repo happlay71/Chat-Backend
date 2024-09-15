@@ -1,4 +1,4 @@
-package online.happlay.chat.enums;
+package online.happlay.chat.enums.userBeauty;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

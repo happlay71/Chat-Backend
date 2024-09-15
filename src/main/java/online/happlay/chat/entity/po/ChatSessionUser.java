@@ -12,6 +12,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 
 /**
  * <p>
@@ -55,5 +56,12 @@ public class ChatSessionUser implements Serializable {
     @TableField(exist = false)
     private String memberCount;
 
+    @ApiModelProperty(value = "联系人类型")
+    @TableField(exist = false)
+    private Integer contactType;
+
+    public Integer getContactType() {
+        return UserContactTypeEnum.getByPrefix(contactId).getType();
+    }
 
 }

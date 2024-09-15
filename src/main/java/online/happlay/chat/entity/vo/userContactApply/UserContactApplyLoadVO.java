@@ -1,8 +1,8 @@
-package online.happlay.chat.entity.vo;
+package online.happlay.chat.entity.vo.userContactApply;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import online.happlay.chat.enums.UserContactApplyStatusEnum;
+import online.happlay.chat.enums.userContactApply.UserContactApplyStatusEnum;
 
 @Data
 public class UserContactApplyLoadVO {

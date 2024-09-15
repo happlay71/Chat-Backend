@@ -1,6 +1,5 @@
-package online.happlay.chat.enums;
+package online.happlay.chat.enums.message;
 
-import io.swagger.models.auth.In;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

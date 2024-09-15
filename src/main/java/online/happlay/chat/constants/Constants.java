@@ -1,6 +1,6 @@
 package online.happlay.chat.constants;
 
-import online.happlay.chat.enums.UserContactTypeEnum;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 
 public class Constants {
 
@@ -9,7 +9,7 @@ public class Constants {
     public static final String REDIS_KEY_WS_TOKEN = "chat:ws:token:";
     public static final String REDIS_KEY_WS_TOKEN_USERID = "chat:ws:token:userid:";
     public static final String REDIS_KEY_SYS_SETTING = "chat:sys:setting:";
-    public static final String ROBOT_UID = UserContactTypeEnum.USER.getPrefix() + "robot:";
+    public static final String ROBOT_UID = UserContactTypeEnum.USER.getPrefix() + "robot";
     public static final String REDIS_KEY_USER_CONTACT = "chat:ws:user:contact";
 
     public static final Integer REDIS_CHECK_CODE_OUTTIME = 60;

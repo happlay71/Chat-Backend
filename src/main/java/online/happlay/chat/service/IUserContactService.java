@@ -1,13 +1,13 @@
 package online.happlay.chat.service;
 
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
-import online.happlay.chat.entity.vo.UserContactSearchResultVO;
+import online.happlay.chat.entity.vo.userContact.UserContactSearchResultVO;
 import online.happlay.chat.entity.po.UserContact;
 import com.baomidou.mybatisplus.extension.service.IService;
-import online.happlay.chat.entity.vo.UserInfoVO;
-import online.happlay.chat.entity.vo.UserLoadContactVO;
-import online.happlay.chat.enums.UserContactStatusEnum;
-import online.happlay.chat.enums.UserContactTypeEnum;
+import online.happlay.chat.entity.vo.user.UserInfoVO;
+import online.happlay.chat.entity.vo.user.UserLoadContactVO;
+import online.happlay.chat.enums.userContact.UserContactStatusEnum;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 
 import java.util.List;
 
@@ -34,4 +34,6 @@ public interface IUserContactService extends IService<UserContact> {
     void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo);
 
     void removeUserContact(String userId, String contactId, UserContactStatusEnum userContactStatusEnum);
+
+    void addContactForRobot(String userId);
 }

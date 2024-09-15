@@ -1,4 +1,4 @@
-package online.happlay.chat.entity.vo;
+package online.happlay.chat.entity.vo.userContact;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -8,7 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class UserLoadContactVO {
+public class UserContactVO {
 
     @ApiModelProperty(value = "用户ID")
     private String userId;
@@ -28,8 +28,9 @@ public class UserLoadContactVO {
     @ApiModelProperty(value = "最后更新时间")
     private LocalDateTime lastUpdateTime;
 
-    @ApiModelProperty(value = "联系人/群名称")
+    @ApiModelProperty(value = "联系人姓名")
     private String contactName;
 
-
+    @ApiModelProperty(value = "联系人性别")
+    private Integer sex;
 }

@@ -10,11 +10,16 @@ import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.user.UserQueryDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContact;
-import online.happlay.chat.entity.vo.PaginationResultVO;
+import online.happlay.chat.entity.vo.page.PaginationResultVO;
 import online.happlay.chat.enums.*;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.po.UserInfoBeauty;
-import online.happlay.chat.entity.vo.UserInfoVO;
+import online.happlay.chat.entity.vo.user.UserInfoVO;
+import online.happlay.chat.enums.user.UserStatusEnum;
+import online.happlay.chat.enums.userBeauty.BeautyAccountStatusEnum;
+import online.happlay.chat.enums.userContact.JoinTypeEnum;
+import online.happlay.chat.enums.userContact.UserContactStatusEnum;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserInfoMapper;
 import online.happlay.chat.redis.RedisComponent;
@@ -24,10 +29,12 @@ import online.happlay.chat.service.IUserInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.utils.StringTools;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -51,7 +58,9 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
     private final IUserInfoBeautyService userInfoBeautyService;
 
-    private final IUserContactService userContactService;
+    @Resource
+    @Lazy
+    private IUserContactService userContactService;
 
     private final CommonConfig commonConfig;
 
@@ -104,7 +113,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
             userInfoBeautyService.useBeauty(beauty);
         }
 
-        // TODO 初始化机器人好友
+        // 初始化机器人好友
+        userContactService.addContactForRobot(userId);
     }
 
 

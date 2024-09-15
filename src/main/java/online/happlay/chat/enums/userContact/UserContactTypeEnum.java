@@ -1,4 +1,4 @@
-package online.happlay.chat.enums;
+package online.happlay.chat.enums.userContact;
 
 import cn.hutool.core.util.StrUtil;
 import lombok.AllArgsConstructor;

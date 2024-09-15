@@ -4,8 +4,8 @@ import online.happlay.chat.entity.dto.user.UserQueryDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.UserInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
-import online.happlay.chat.entity.vo.PaginationResultVO;
-import online.happlay.chat.entity.vo.UserInfoVO;
+import online.happlay.chat.entity.vo.page.PaginationResultVO;
+import online.happlay.chat.entity.vo.user.UserInfoVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

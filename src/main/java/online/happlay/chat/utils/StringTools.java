@@ -1,12 +1,14 @@
 package online.happlay.chat.utils;
 
-import online.happlay.chat.enums.UserContactTypeEnum;
+import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import static online.happlay.chat.constants.Constants.LENGTH_11;
 
@@ -74,5 +76,10 @@ public class StringTools {
 
     public static final String encodeMd5(String originString) {
         return StringTools.isEmpty(originString) ? null : DigestUtils.md5Hex(originString);
+    }
+
+    public static final String getChatSessionIdForUser(String[] userIds) {
+        Arrays.sort(userIds);
+        return encodeMd5(StringUtils.join(userIds, ""));
     }
 }

@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 import online.happlay.chat.annotation.GlobalInterceptor;
 import online.happlay.chat.entity.dto.user.UserQueryDTO;
 import online.happlay.chat.entity.po.UserInfo;
-import online.happlay.chat.entity.vo.PaginationResultVO;
-import online.happlay.chat.entity.vo.ResponseVO;
+import online.happlay.chat.entity.vo.page.PaginationResultVO;
+import online.happlay.chat.entity.vo.common.ResponseVO;
 import online.happlay.chat.service.IUserInfoService;
 import org.springframework.web.bind.annotation.*;
 

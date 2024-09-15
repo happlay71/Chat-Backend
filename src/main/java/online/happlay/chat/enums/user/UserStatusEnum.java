@@ -1,4 +1,4 @@
-package online.happlay.chat.enums;
+package online.happlay.chat.enums.user;
 
 
 import lombok.AllArgsConstructor;

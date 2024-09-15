@@ -4,10 +4,10 @@ import online.happlay.chat.entity.dto.group.LoadGroupQueryDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.GroupInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
-import online.happlay.chat.entity.vo.GroupDetails;
-import online.happlay.chat.entity.vo.GroupInfoVO;
-import online.happlay.chat.entity.vo.MyGroups;
-import online.happlay.chat.entity.vo.PaginationResultVO;
+import online.happlay.chat.entity.vo.group.GroupDetails;
+import online.happlay.chat.entity.vo.group.GroupInfoVO;
+import online.happlay.chat.entity.vo.group.MyGroups;
+import online.happlay.chat.entity.vo.page.PaginationResultVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

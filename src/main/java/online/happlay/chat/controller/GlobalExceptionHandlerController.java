@@ -2,7 +2,7 @@ package online.happlay.chat.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import online.happlay.chat.enums.ResponseCodeEnum;
-import online.happlay.chat.entity.vo.ResponseVO;
+import online.happlay.chat.entity.vo.common.ResponseVO;
 import online.happlay.chat.exception.BusinessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;

@@ -3,6 +3,8 @@ package online.happlay.chat.service;
 import online.happlay.chat.entity.po.ChatMessage;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * <p>
  * 聊天消息表 服务类
@@ -12,5 +14,4 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2024-09-13
  */
 public interface IChatMessageService extends IService<ChatMessage> {
-
 }

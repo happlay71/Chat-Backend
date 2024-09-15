@@ -1,4 +1,4 @@
-package online.happlay.chat.entity.vo;
+package online.happlay.chat.entity.vo.appUpdate;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;

@@ -1,7 +1,6 @@
-package online.happlay.chat.enums;
+package online.happlay.chat.enums.userContact;
 
 import cn.hutool.core.util.StrUtil;
-import io.swagger.models.auth.In;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

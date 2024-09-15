@@ -1,7 +1,7 @@
-package online.happlay.chat.entity.vo;
+package online.happlay.chat.entity.vo.userContact;
 
 import lombok.Data;
-import online.happlay.chat.enums.UserContactStatusEnum;
+import online.happlay.chat.enums.userContact.UserContactStatusEnum;
 
 @Data
 public class UserContactSearchResultVO {

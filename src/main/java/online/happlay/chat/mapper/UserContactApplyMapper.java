@@ -2,7 +2,7 @@ package online.happlay.chat.mapper;
 
 import online.happlay.chat.entity.po.UserContactApply;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import online.happlay.chat.entity.vo.UserContactApplyLoadVO;
+import online.happlay.chat.entity.vo.userContactApply.UserContactApplyLoadVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
