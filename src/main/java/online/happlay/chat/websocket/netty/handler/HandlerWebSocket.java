@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 简单处理器，专门用来处理特定类型的消息帧
+ * 自定义的websocket处理器，专门用来处理特定类型的消息帧
  * TextWebSocketFrame，即文本消息帧
  */
 @Slf4j

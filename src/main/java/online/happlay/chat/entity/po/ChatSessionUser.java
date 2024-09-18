@@ -50,7 +50,7 @@ public class ChatSessionUser implements Serializable {
 
     @ApiModelProperty(value = "最后接收消息时间(毫秒)")
     @TableField(exist = false)
-    private String lastReceiveTime;
+    private Long lastReceiveTime;
 
     @ApiModelProperty(value = "群组人数")
     @TableField(exist = false)

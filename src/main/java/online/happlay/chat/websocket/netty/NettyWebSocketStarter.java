@@ -1,5 +1,6 @@
 package online.happlay.chat.websocket.netty;
 
+import cn.hutool.core.util.StrUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -10,6 +11,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.websocket.netty.handler.HandlerHeartBeat;
@@ -21,6 +23,10 @@ import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
 // TODO netty待学习
+
+/**
+ * websocket启动类
+ */
 @Slf4j
 @Component
 public class NettyWebSocketStarter implements Runnable{
@@ -82,7 +88,13 @@ public class NettyWebSocketStarter implements Runnable{
                         }
                     });
             // 绑定端口并启动服务器
-            ChannelFuture channelFuture = serverBootstrap.bind(commonConfig.getWsPort()).sync();
+            Integer wsPort = commonConfig.getWsPort();  // 获取端口
+            String wsPortStr = System.getProperty("ws.port");  // 获取多服务器启动时配置的其他端口
+            if (!StrUtil.isEmpty(wsPortStr)) {
+                wsPort = Integer.parseInt(wsPortStr);
+            }
+
+            ChannelFuture channelFuture = serverBootstrap.bind(wsPort).sync();
             log.info("netty启动成功！端口：{}", commonConfig.getWsPort());
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {

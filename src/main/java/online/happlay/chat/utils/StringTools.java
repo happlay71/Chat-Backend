@@ -82,4 +82,8 @@ public class StringTools {
         Arrays.sort(userIds);
         return encodeMd5(StringUtils.join(userIds, ""));
     }
+
+    public static final String getChatSessionIdForGroup(String groupId) {
+        return encodeMd5(groupId);
+    }
 }

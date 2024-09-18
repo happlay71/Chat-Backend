@@ -17,6 +17,8 @@ public interface IUserContactApplyService extends IService<UserContactApply> {
 
     PaginationResultVO loadApply(UserTokenDTO userToken, Integer pageNo);
 
+    Integer applyAdd(UserTokenDTO userToken, String contactId, String applyInfo);
+
     void dealWithApply(String userId, Integer applyId, Integer status);
 
 

@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.SysSettingDTO;
+import online.happlay.chat.entity.dto.message.MessageSendDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.*;
 import online.happlay.chat.entity.vo.userContact.UserContactSearchResultVO;
@@ -27,6 +28,7 @@ import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.utils.StringTools;
+import online.happlay.chat.websocket.netty.MessageHandler;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +63,10 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
     private final IChatMessageService chatMessageService;
 
     private final RedisComponent redisComponent;
+
+    private final MessageHandler messageHandler;
+
+
 
 
     @Resource
@@ -109,93 +115,6 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         UserContact userContact = this.getOne(queryWrapper);
         resultDto.setStatus(userContact == null ? null : userContact.getStatus());
         return resultDto;
-    }
-
-    @Override
-    @Transactional
-    public Integer applyAdd(UserTokenDTO userToken, String contactId, String applyInfo) {
-        // 1.获取id前缀
-        UserContactTypeEnum typeEnum = UserContactTypeEnum.getByPrefix(contactId);
-        if (null == typeEnum) {
-            throw new BusinessException(ResponseCodeEnum.CODE_600);
-        }
-
-        // 申请人
-        String applyUserId = userToken.getUserId();
-
-        // 设置默认申请信息
-        applyInfo = StrUtil.isEmpty(applyInfo) ?
-                String.format(Constants.APPLY_INFO_TEMPLATE, userToken.getNickName()) : applyInfo;
-
-        Integer joinType = null;
-        String receiveUserId = contactId;
-
-        // 查询是否已添加，被拉黑无法添加
-        UserContact userContact = this.getOne(new LambdaQueryWrapper<UserContact>()
-                .eq(UserContact::getUserId, applyUserId)
-                .eq(UserContact::getContactId, contactId));
-        if (userContact != null && UserContactStatusEnum.BLACKLIST_BE.getStatus().equals(userContact.getStatus())) {
-            throw new BusinessException("对方已经将你拉黑，无法添加！");
-        }
-
-        switch (typeEnum) {
-            case GROUP:
-                GroupInfo groupInfo = groupInfoService.getById(contactId);
-                if (groupInfo == null || GroupStatusEnum.DISSOLUTION.getStatus().equals(groupInfo.getStatus())) {
-                    throw new BusinessException("群聊不存在或已解散");
-                }
-                // 获取群主id，便于发送申请
-                receiveUserId = groupInfo.getGroupOwnerId();
-                joinType = groupInfo.getJoinType();
-                break;
-            case USER:
-                UserInfo userInfo = userInfoService.getById(contactId);
-                if (userInfo == null) {
-                    throw new BusinessException(ResponseCodeEnum.CODE_600);
-                }
-                joinType = userInfo.getJoinType();
-                break;
-        }
-
-        // 直接加入，不用添加到申请记录
-        if (JoinTypeEnum.JOIN.getType().equals(joinType)) {
-            // 添加联系人
-            addContact(applyUserId, receiveUserId, contactId, typeEnum.getType(), applyInfo);
-            return joinType;
-        }
-
-        // 需要申请，数据库保存记录
-        UserContactApply apply = userContactApplyService.getOne(new LambdaQueryWrapper<UserContactApply>()
-                .eq(UserContactApply::getApplyUserId, applyUserId)
-                .eq(UserContactApply::getReceiveUserId, receiveUserId)
-                .eq(UserContactApply::getContactId, contactId));
-
-        LocalDateTime time = LocalDateTime.now();
-
-        if (apply == null) {
-            // 初次申请
-            UserContactApply userContactApply = new UserContactApply();
-            userContactApply.setApplyUserId(applyUserId);
-            userContactApply.setContactId(contactId);
-            userContactApply.setContactType(typeEnum.getType());
-            userContactApply.setReceiveUserId(receiveUserId);
-            userContactApply.setLastApplyTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-            userContactApply.setStatus(UserContactApplyStatusEnum.INIT.getStatus());
-            userContactApply.setApplyInfo(applyInfo);
-            userContactApplyService.save(userContactApply);
-        } else {
-            // 更新申请
-            apply.setStatus(UserContactApplyStatusEnum.REJECT.getStatus());
-            apply.setLastApplyTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-            apply.setApplyInfo(applyInfo);
-            userContactApplyService.updateById(apply);
-        }
-
-        if (apply == null || !UserContactApplyStatusEnum.INIT.getStatus().equals(apply.getStatus())) {
-            // TODO 发送WS消息
-        }
-
-        return joinType;
     }
 
     @Override
@@ -316,9 +235,78 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
 
         this.saveBatch(contactList);
 
-        // TODO 如果是好友，接收人也添加申请人为好友 添加缓存
+        // 如果是好友，接收人也添加申请人为好友 添加缓存
 
-        // TODO 创建会话 发送消息
+        if (UserContactTypeEnum.USER.getType().equals(contactType)) {
+            // 在对方角度：将该用户作为好友的好友添加进缓存
+            redisComponent.addUserContact(receiveUserId, applyUserId);
+        }
+
+        redisComponent.addUserContact(applyUserId, contactId);
+
+        // 创建会话 发送消息
+        String sessionId = null;
+        if (UserContactTypeEnum.USER.getType().equals(contactType)) {
+            sessionId = StringTools.getChatSessionIdForUser(new String[]{applyUserId, contactId});
+        } else {
+            sessionId = StringTools.getChatSessionIdForGroup(contactId);
+        }
+
+        List<ChatSessionUser> chatSessionUserList = new ArrayList<>();
+        if (UserContactTypeEnum.USER.getType().equals(contactType)) {
+            // 用户
+            ChatSession chatSession = new ChatSession();
+            chatSession.setSessionId(sessionId);
+            chatSession.setLastMessage(applyInfo);
+            chatSession.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            chatSessionService.saveOrUpdate(chatSession);
+
+            // 申请人session
+            ChatSessionUser applySessionUser = new ChatSessionUser();
+            applySessionUser.setUserId(applyUserId);  // 申请人的id
+            applySessionUser.setContactId(contactId);
+            applySessionUser.setSessionId(sessionId);
+            UserInfo contactUser = userInfoService.getById(contactId);
+            applySessionUser.setContactName(contactUser.getNickName());
+            chatSessionUserList.add(applySessionUser);
+
+            // 接收人session
+            ChatSessionUser contactSessionUser = new ChatSessionUser();
+            contactSessionUser.setUserId(contactId);  // 联系人的id
+            contactSessionUser.setContactId(applyUserId);
+            contactSessionUser.setSessionId(sessionId);
+            UserInfo applyUser = userInfoService.getById(applyUserId);
+            contactSessionUser.setContactName(applyUser.getNickName());
+            chatSessionUserList.add(contactSessionUser);
+
+            chatSessionUserService.saveOrUpdateBatch(chatSessionUserList);
+
+            // 记录消息表
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setSessionId(sessionId);
+            chatMessage.setMessageType(MessageTypeEnum.ADD_FRIEND.getType());
+            chatMessage.setMessageContent(applyInfo);
+            chatMessage.setSendUserId(applyUserId);
+            chatMessage.setSendUserNickName(applyUser.getNickName());
+            chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            chatMessage.setContactId(contactId);
+            chatMessage.setContactType(UserContactTypeEnum.USER.getType());
+            chatMessageService.save(chatMessage);
+
+            MessageSendDTO messageSendDTO = BeanUtil.copyProperties(chatMessage, MessageSendDTO.class);
+            // 发送给接收人、申请人
+            messageHandler.sendMessage(messageSendDTO);
+
+            // 发送给该用户本身
+            messageSendDTO.setMessageType(MessageTypeEnum.ADD_FRIEND.getType());
+            messageSendDTO.setContactId(applyUserId);
+            messageSendDTO.setExtendData(contactUser);
+            messageHandler.sendMessage(messageSendDTO);
+
+        } else {
+            // TODO 群聊的sessionId应该是创建群聊的时候才新建，其他应该直接获取
+
+        }
     }
 
     @Override
@@ -396,6 +384,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         chatSessionService.save(chatSession);
 
         // 增加会话人信息
+        // TODO 好像没成功加入到chatSessionUser
         ChatSessionUser chatSessionUser = new ChatSessionUser();
         chatSessionUser.setUserId(userId);
         chatSessionUser.setContactId(contactId);

@@ -21,6 +21,7 @@ import online.happlay.chat.mapper.ChatSessionUserMapper;
 import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.*;
 import org.apache.catalina.User;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -33,6 +34,9 @@ import java.util.stream.Collectors;
 
 import static online.happlay.chat.constants.Constants.MIL_LIS_SECONDS_3DAYS_AGO;
 
+/**
+ * ws通道工具
+ */
 @Slf4j
 @Component
 public class ChannelContextUtils {
@@ -45,6 +49,7 @@ public class ChannelContextUtils {
     private IUserInfoService userInfoService;
     
     @Resource
+    @Lazy
     private IUserContactApplyService userContactApplyService;
 
     @Resource
@@ -57,7 +62,7 @@ public class ChannelContextUtils {
     private RedisComponent redisComponent;
 
     /**
-     * 用于将 userId 绑定到指定的 Netty Channel 上
+     * TODO 未测试，用于将 userId 绑定到指定的 Netty Channel 上
      * @param userId
      * @param channel
      */
@@ -158,24 +163,33 @@ public class ChannelContextUtils {
      * @param messageSendDTO
      * @param receiveId 接收消息的用户的id
      */
-    private static void sendMsg(MessageSendDTO messageSendDTO, String receiveId) {
+    private void sendMsg(MessageSendDTO messageSendDTO, String receiveId) {
         // TODO 26-17:41 JSONUTILS
-        if (receiveId == null) {
+
+        Channel userChannel = USER_CONTEXT_MAP.get(receiveId);
+        if (userChannel == null) {
             return;
         }
 
-        Channel sendChannel = USER_CONTEXT_MAP.get(receiveId);
-        if (sendChannel == null) {
-            return;
+        if (MessageTypeEnum.ADD_FRIEND_SELF.getType().equals(messageSendDTO.getMessageType())) {
+            // 向自己发送信息
+            UserInfo userInfo = (UserInfo) messageSendDTO.getExtendData();
+            messageSendDTO.setMessageType(MessageTypeEnum.ADD_FRIEND.getType());
+            messageSendDTO.setContactId(userInfo.getUserId());
+            messageSendDTO.setContactName(userInfo.getNickName());
+            messageSendDTO.setExtendData(null);
+        } else {
+            /**
+             * 在一对一聊天的场景下，contactId 不再是用来表示接收方的，
+             * 而是用来标识与这条消息相关的最重要联系人，也就是发送者。
+             *
+             * 站在客户端的角度，好友的联系人就是该用户
+             */
+            messageSendDTO.setContactId(messageSendDTO.getSendUserId());
+            messageSendDTO.setContactName(messageSendDTO.getSendUserNickName());
         }
 
-        /**
-         * 在一对一聊天的场景下，contactId 不再是用来表示接收方的，
-         * 而是用来标识与这条消息相关的最重要联系人，也就是发送者。
-         */
-        messageSendDTO.setContactId(messageSendDTO.getSendUserId());
-        messageSendDTO.setContactName(messageSendDTO.getSendUserNickName());
-        sendChannel.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(messageSendDTO)));
+        userChannel.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(messageSendDTO)));
     }
 
 
@@ -221,6 +235,62 @@ public class ChannelContextUtils {
         } else {
             log.warn("未找到用户: {}", userId);
         }
+    }
+
+    public void sendMessage(MessageSendDTO messageSendDTO) {
+        // 获取id前缀，判断是否是群聊
+        UserContactTypeEnum contactTypeEnum = UserContactTypeEnum.getByPrefix(messageSendDTO.getContactId());
+        switch (contactTypeEnum) {
+            case USER:
+                sendToUser(messageSendDTO);
+                break;
+            case GROUP:
+                sendToGroup(messageSendDTO);
+                break;
+        }
+    }
+
+    // 发送给群组
+    private void sendToGroup(MessageSendDTO messageSendDTO) {
+        if (StrUtil.isEmpty(messageSendDTO.getContactId())) {
+            return;
+        }
+
+        ChannelGroup channelGroup = GROUP_CONTEXT_MAP.get(messageSendDTO.getContactId());
+        if (channelGroup == null) {
+            return;
+        }
+        channelGroup.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(messageSendDTO)));
+    }
+
+    // 发送给用户
+    private void sendToUser(MessageSendDTO messageSendDTO) {
+        String contactId = messageSendDTO.getContactId();
+        if (StrUtil.isEmpty(contactId)) {
+            return;
+        }
+        sendMsg(messageSendDTO, contactId);
+
+        // 强制下线
+        if (MessageTypeEnum.FORCE_OFF_LINE.getType().equals(messageSendDTO.getMessageType())) {
+            closeContext(contactId);
+        }
+    }
+
+    /**
+     * 强制下线，删除token缓存
+     * @param userId
+     */
+    public void closeContext(String userId) {
+        if (StrUtil.isEmpty(userId)) {
+            return;
+        }
+        redisComponent.cleanUserTokenById(userId);
+        Channel channel = USER_CONTEXT_MAP.get(userId);
+        if (channel == null) {
+            return;
+        }
+        channel.close();
     }
 
 }

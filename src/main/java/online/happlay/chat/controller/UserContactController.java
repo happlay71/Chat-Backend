@@ -57,10 +57,10 @@ public class UserContactController extends BaseController{
     @GlobalInterceptor
     public ResponseVO applyAdd(HttpServletRequest request,
                                @RequestParam("contactId") @NotEmpty String contactId,
-                               @RequestParam("applyInfo") String applyInfo
+                               @RequestParam(value = "applyInfo", required = false) String applyInfo
     ) {
         UserTokenDTO userToken = getUserToken(request);
-        Integer joinType = userContactService.applyAdd(userToken, contactId, applyInfo);
+        Integer joinType = userContactApplyService.applyAdd(userToken, contactId, applyInfo);
         return getSuccessResponseVO(joinType);
     }
 

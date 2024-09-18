@@ -23,8 +23,6 @@ public interface IUserContactService extends IService<UserContact> {
 
     UserContactSearchResultVO searchContact(String userId, String contactId);
 
-    Integer applyAdd(UserTokenDTO userToken, String contactId, String applyInfo);
-
     List<UserLoadContactVO> loadContact(String userId, UserContactTypeEnum typeEnum);
 
     UserInfoVO getContactInfo(UserTokenDTO userToken, String contactId);
