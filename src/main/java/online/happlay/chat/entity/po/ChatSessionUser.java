@@ -27,7 +27,7 @@ import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 @Accessors(chain = true)
 @TableName("chat_session_user")
 @ApiModel(value = "ChatSessionUser对象", description = "会话用户")
-public class ChatSessionUser implements Serializable {
+public class    ChatSessionUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -54,7 +54,7 @@ public class ChatSessionUser implements Serializable {
 
     @ApiModelProperty(value = "群组人数")
     @TableField(exist = false)
-    private String memberCount;
+    private Integer memberCount;
 
     @ApiModelProperty(value = "联系人类型")
     @TableField(exist = false)

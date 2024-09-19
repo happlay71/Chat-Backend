@@ -28,7 +28,9 @@ import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.utils.StringTools;
+import online.happlay.chat.websocket.netty.ChannelContextUtils;
 import online.happlay.chat.websocket.netty.MessageHandler;
+import org.apache.catalina.User;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +56,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
 
     private final IUserInfoService userInfoService;
 
-    private final IUserContactApplyService userContactApplyService;
+    private final ChannelContextUtils channelContextUtils;
 
     private final IChatSessionUserService chatSessionUserService;
 
@@ -304,8 +306,59 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
             messageHandler.sendMessage(messageSendDTO);
 
         } else {
-            // TODO 群聊的sessionId应该是创建群聊的时候才新建，其他应该直接获取
+            // 发送申请的人的角度
+            // 1.会话用户
+            ChatSessionUser chatSessionUser = new ChatSessionUser();
+            chatSessionUser.setUserId(applyUserId);
+            chatSessionUser.setContactId(contactId);
 
+            // 1.1获取对应群组信息
+            GroupInfo groupInfo = groupInfoService.getById(contactId);
+
+            chatSessionUser.setContactName(groupInfo.getGroupName());
+            chatSessionUser.setSessionId(sessionId);
+            chatSessionUserService.save(chatSessionUser);
+
+            // 2.会话信息
+            // 2.1查询申请人信息及发送的消息
+            UserInfo applyUserInfo = userInfoService.getById(applyUserId);
+            String sendMessage = String.format(MessageTypeEnum.ADD_GROUP.getInitMessage(), applyUserInfo.getNickName());
+
+            ChatSession chatSession = new ChatSession();
+            chatSession.setSessionId(sessionId);
+            chatSession.setLastMessage(sendMessage);
+            chatSession.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            chatSessionService.saveOrUpdate(chatSession);
+
+            // 3.聊天消息
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setSessionId(sessionId);
+            chatMessage.setMessageType(MessageTypeEnum.ADD_GROUP.getType());
+            chatMessage.setMessageContent(sendMessage);
+            chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            chatMessage.setContactId(contactId);
+            chatMessage.setContactType(UserContactTypeEnum.GROUP.getType());
+            chatMessage.setStatus(MessageStatusEnum.SENDEND.getStatus());
+            chatMessageService.save(chatMessage);
+
+            // 申请人存入redis
+            redisComponent.addUserContact(applyUserId, groupInfo.getGroupId());
+
+            // 将申请人通道加入该群聊通道
+            channelContextUtils.addUserToGroup(applyUserId, groupInfo.getGroupId());
+
+            // 发送群消息
+            MessageSendDTO messageSendDTO = BeanUtil.copyProperties(chatMessage, MessageSendDTO.class);
+            messageSendDTO.setContactId(contactId);
+
+            // 获取群员数量
+            long memberCount = this.count(new LambdaQueryWrapper<UserContact>()
+                    .eq(UserContact::getContactId, contactId)
+                    .eq(UserContact::getContactType, UserContactStatusEnum.FRIEND.getStatus()));
+            messageSendDTO.setMemberCount((int) memberCount);
+            messageSendDTO.setContactName(groupInfo.getGroupName());
+
+            messageHandler.sendMessage(messageSendDTO);
         }
     }
 

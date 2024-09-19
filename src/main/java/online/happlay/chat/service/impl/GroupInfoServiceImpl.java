@@ -7,10 +7,9 @@ import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
 import online.happlay.chat.entity.dto.group.LoadGroupQueryDTO;
 import online.happlay.chat.entity.dto.SysSettingDTO;
+import online.happlay.chat.entity.dto.message.MessageSendDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
-import online.happlay.chat.entity.po.GroupInfo;
-import online.happlay.chat.entity.po.UserContact;
-import online.happlay.chat.entity.po.UserInfo;
+import online.happlay.chat.entity.po.*;
 import online.happlay.chat.entity.vo.group.GroupDetails;
 import online.happlay.chat.entity.vo.group.GroupInfoVO;
 import online.happlay.chat.entity.vo.group.MyGroups;
@@ -18,16 +17,18 @@ import online.happlay.chat.entity.vo.page.PaginationResultVO;
 import online.happlay.chat.entity.vo.userContact.UserContactVO;
 import online.happlay.chat.enums.group.GroupStatusEnum;
 import online.happlay.chat.enums.ResponseCodeEnum;
+import online.happlay.chat.enums.message.MessageStatusEnum;
+import online.happlay.chat.enums.message.MessageTypeEnum;
 import online.happlay.chat.enums.userContact.UserContactStatusEnum;
 import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.GroupInfoMapper;
 import online.happlay.chat.redis.RedisComponent;
-import online.happlay.chat.service.IGroupInfoService;
+import online.happlay.chat.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import online.happlay.chat.service.IUserContactService;
-import online.happlay.chat.service.IUserInfoService;
 import online.happlay.chat.utils.StringTools;
+import online.happlay.chat.websocket.netty.ChannelContextUtils;
+import online.happlay.chat.websocket.netty.MessageHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,7 +62,18 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
 
     private final GroupInfoMapper groupInfoMapper;
 
+    private final IChatSessionService chatSessionService;
+
+    private final IChatMessageService chatMessageService;
+
+    private final IChatSessionUserService chatSessionUserService;
+
+    private final ChannelContextUtils channelContextUtils;
+
+    private final MessageHandler messageHandler;
+
     // 新增
+    // TODO 目前为群主建群，再邀人，可将邀人和建群操作合并
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveGroup(GroupInfo groupInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException {
@@ -77,7 +90,8 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
             throw new BusinessException(ResponseCodeEnum.CODE_600);
         }
 
-        groupInfo.setCreateTime(LocalDateTime.now());
+        LocalDateTime time = LocalDateTime.now();
+        groupInfo.setCreateTime(time);
         groupInfo.setGroupId(StringTools.getGroupId());
         this.save(groupInfo);
 
@@ -87,12 +101,53 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         userContact.setContactType(UserContactTypeEnum.GROUP.getType());
         userContact.setContactId(groupInfo.getGroupId());
         userContact.setUserId(groupInfo.getGroupOwnerId());
-        userContact.setCreateTime(LocalDateTime.now());
+        userContact.setCreateTime(time);
         userContactService.save(userContact);
 
-        // TODO 创建会话
+        // 1.创建会话
+        // 1.1会话信息
+        String sessionId = StringTools.getChatSessionIdForGroup(groupInfo.getGroupId());
+        ChatSession chatSession = new ChatSession();
+        chatSession.setSessionId(sessionId);
+        chatSession.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatSession.setLastMessage(MessageTypeEnum.GROUP_CREATE.getInitMessage());
+        chatSessionService.saveOrUpdate(chatSession);
 
-        // TODO 发送初始消息
+        // 1.2会话用户
+        ChatSessionUser chatSessionUser = new ChatSessionUser();
+        chatSessionUser.setUserId(groupInfo.getGroupOwnerId());
+        chatSessionUser.setContactId(groupInfo.getGroupId());
+        chatSessionUser.setContactName(groupInfo.getGroupName());
+        chatSessionUser.setSessionId(sessionId);
+        chatSessionUserService.save(chatSessionUser);
+
+        // 1.3聊天消息
+        ChatMessage chatMessage = new ChatMessage();
+        chatMessage.setSessionId(sessionId);
+        chatMessage.setMessageType(MessageTypeEnum.GROUP_CREATE.getType());
+        chatMessage.setMessageContent(MessageTypeEnum.GROUP_CREATE.getInitMessage());
+        chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatMessage.setContactId(groupInfo.getGroupId());
+        chatMessage.setContactType(UserContactTypeEnum.GROUP.getType());
+        chatMessage.setStatus(MessageStatusEnum.SENDEND.getStatus());
+        chatMessageService.save(chatMessage);
+
+        // 存入redis
+        redisComponent.addUserContact(groupInfo.getGroupOwnerId(), groupInfo.getGroupId());
+
+        // 将群主用户通道加入该群聊通道
+        channelContextUtils.addUserToGroup(groupInfo.getGroupOwnerId(), groupInfo.getGroupId());
+
+        // 发送初始的ws消息
+        chatSessionUser.setLastMessage(MessageTypeEnum.GROUP_CREATE.getInitMessage());
+        chatSessionUser.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatSessionUser.setMemberCount(1);  // 只有群主
+
+        MessageSendDTO messageSendDTO = BeanUtil.copyProperties(chatMessage, MessageSendDTO.class);
+        messageSendDTO.setExtendData(chatSessionUser);
+        messageSendDTO.setLastMessage(chatSessionUser.getLastMessage());
+        messageHandler.sendMessage(messageSendDTO);
+
 
         // 保存群头像
         saveAvatar(groupInfo, avatarFile, avatarCover);

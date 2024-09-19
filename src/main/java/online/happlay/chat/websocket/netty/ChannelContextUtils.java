@@ -193,11 +193,7 @@ public class ChannelContextUtils {
     }
 
 
-    /**
-     * 添加进群聊通道
-     * @param groupId
-     * @param channel
-     */
+    // 添加进群聊通道
     private void addToGroup(String groupId, Channel channel) {
         ChannelGroup group = GROUP_CONTEXT_MAP.get(groupId);
         if (group == null) {
@@ -237,6 +233,10 @@ public class ChannelContextUtils {
         }
     }
 
+    /**
+     * 发送消息
+     * @param messageSendDTO
+     */
     public void sendMessage(MessageSendDTO messageSendDTO) {
         // 获取id前缀，判断是否是群聊
         UserContactTypeEnum contactTypeEnum = UserContactTypeEnum.getByPrefix(messageSendDTO.getContactId());
@@ -291,6 +291,24 @@ public class ChannelContextUtils {
             return;
         }
         channel.close();
+    }
+
+    // TODO 解释
+    public void addUserToGroup(String userId, String groupId) {
+        Channel channel = USER_CONTEXT_MAP.get(userId);
+        addUserToGroup(groupId, channel);
+    }
+
+    private void addUserToGroup(String groupId, Channel channel) {
+        ChannelGroup group = GROUP_CONTEXT_MAP.get(groupId);
+        if (group == null) {
+            group = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+            GROUP_CONTEXT_MAP.put(groupId, group);
+        }
+        if (channel == null) {
+            return;
+        }
+        group.add(channel);
     }
 
 }
