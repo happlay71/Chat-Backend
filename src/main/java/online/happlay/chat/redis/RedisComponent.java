@@ -61,6 +61,16 @@ public class RedisComponent {
     }
 
     /**
+     * 根据userId获取用户信息
+     * @param userId
+     * @return
+     */
+    public UserTokenDTO getUserTokenDTOByUserId(String userId) {
+        String token = (String) redisUtils.get(REDIS_KEY_WS_TOKEN_USERID + userId);
+        return getUserTokenDTO(token);
+    }
+
+    /**
      * 获取系统设置信息
      * @return
      */

@@ -163,7 +163,12 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
             String contactName = null;
             switch (typeEnum) {
                 case USER:
-                    contactName = userInfoService.getById(userLoadContactVO.getContactId()).getNickName();
+                    // 考虑到机器人不会加入到用户信息表里，所以需要先判断是否为机器人
+                    if (userLoadContactVO.getContactId().equals("Urobot")) {
+                        contactName = "Urobot";
+                    } else {
+                        contactName = userInfoService.getById(userLoadContactVO.getContactId()).getNickName();
+                    }
                     break;
                 case GROUP:
                     contactName = groupInfoService.getById(userLoadContactVO.getContactId()).getGroupName();

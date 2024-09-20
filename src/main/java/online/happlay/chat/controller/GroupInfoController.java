@@ -47,8 +47,8 @@ public class GroupInfoController extends BaseController {
     @PostMapping("/saveGroup")
     @GlobalInterceptor
     public ResponseVO saveGroup(@Validated @ModelAttribute SaveGroupDTO saveGroupDTO,
-                                @RequestPart("avatarFile") MultipartFile avatarFile,
-                                @RequestPart("avatarCover") MultipartFile avatarCover,
+                                @RequestPart(value = "avatarFile", required = false) MultipartFile avatarFile,
+                                @RequestPart(value = "avatarCover", required = false) MultipartFile avatarCover,
                                 HttpServletRequest request) throws IOException {
         UserTokenDTO userToken = getUserToken(request);
         GroupInfo groupInfo = createGroupInfo(saveGroupDTO, userToken);

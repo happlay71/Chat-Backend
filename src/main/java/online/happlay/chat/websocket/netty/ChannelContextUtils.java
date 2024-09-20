@@ -293,7 +293,6 @@ public class ChannelContextUtils {
         channel.close();
     }
 
-    // TODO 解释
     public void addUserToGroup(String userId, String groupId) {
         Channel channel = USER_CONTEXT_MAP.get(userId);
         addUserToGroup(groupId, channel);

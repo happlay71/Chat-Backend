@@ -169,9 +169,18 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         }
         this.updateById(groupInfo);
 
-        // TODO 更新相关表冗余信息
+        // 1.更新相关表冗余信息
+        String contactNameUpdate = null;
+        if (!updateGroup.getGroupName().equals(groupInfo.getGroupName())) {
+            contactNameUpdate = groupInfo.getGroupName();
+        }
+        if (contactNameUpdate == null) {
+            return;
+        }
 
-        // TODO 修改群昵称发送WS消息
+        // 根据群组id修改会话用户表里的群组昵称，并发送ws消息
+        chatSessionUserService.updateNameByContactId(groupInfo.getGroupId(), groupInfo.getGroupName());
+
 
         // 保存群头像
         saveAvatar(groupInfo, avatarFile, avatarCover);

@@ -23,6 +23,7 @@ import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.UserInfoMapper;
 import online.happlay.chat.redis.RedisComponent;
+import online.happlay.chat.service.IChatSessionUserService;
 import online.happlay.chat.service.IUserContactService;
 import online.happlay.chat.service.IUserInfoBeautyService;
 import online.happlay.chat.service.IUserInfoService;
@@ -65,6 +66,10 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     private final CommonConfig commonConfig;
 
     private final RedisComponent redisComponent;
+
+    @Lazy
+    @Resource
+    private IChatSessionUserService chatSessionUserService;
 
     @Override
     public UserInfo getByEmail(String email) {
@@ -264,11 +269,22 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         this.updateById(userInfo);
 
         String contactNameUpdate = null;
-        if (dbInfo.getNickName().equals(userInfo.getNickName())) {
+        if (!dbInfo.getNickName().equals(userInfo.getNickName())) {
             contactNameUpdate = userInfo.getNickName();
         }
 
-        // TODO 更新会话信息中的昵称信息
+        if (contactNameUpdate == null) {
+            return;
+        }
+
+        // 更新redis中token中的昵称
+        UserTokenDTO userTokenDTO = redisComponent.getUserTokenDTOByUserId(userInfo.getUserId());
+        userTokenDTO.setNickName(contactNameUpdate);
+        redisComponent.saveUserTokenDTO(userTokenDTO);
+
+        // 更新会话信息表中的昵称信息
+        chatSessionUserService.updateNameByContactId(userInfo.getUserId(), userInfo.getNickName());
+
     }
 
     private static UserInfoVO changeToUserInfoVO(UserInfo userInfo, UserTokenDTO userTokenDTO) {
