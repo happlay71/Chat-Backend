@@ -52,6 +52,7 @@ public class ChannelContextUtils {
     @Lazy
     private IUserContactApplyService userContactApplyService;
 
+    @Lazy
     @Resource
     private IChatMessageService chatMessageService;
 

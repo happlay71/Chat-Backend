@@ -421,7 +421,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         String contactId = sysSettingDTO.getRobotUid();
         String contactName = sysSettingDTO.getRobotNicName();
         String sendMessage = sysSettingDTO.getRobotWelcome();
-        sendMessage = cleanHtmlTag(sendMessage);
+        sendMessage = StringTools.cleanHtmlTag(sendMessage);
         // 增加机器人好友
         LocalDateTime time = LocalDateTime.now();
         UserContact userContact = new UserContact();
@@ -492,20 +492,5 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         return userInfoVO;
     }
 
-    /**
-     * 防止HTML注入
-     * @param content
-     * @return
-     */
-    public static String cleanHtmlTag(String content) {
-        if (StrUtil.isEmpty(content)) {
-            return content;
-        }
-        // 将字符串中的所有 < 替换为 &lt;。这是为了防止 HTML 注入攻击，或者防止浏览器错误地将某些内容识别为 HTML 标签
-        content = content.replace("<", "&lt;");
-        // 将换行符替换为 <br> 标签
-        content = content.replace("\r\n", "<br>");
-        content = content.replace("\n", "<br>");
-        return content;
-    }
+
 }

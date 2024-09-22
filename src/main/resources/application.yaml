@@ -24,8 +24,8 @@ spring:
       connection-test-query: SELECT 1
   servlet:
     multipart:
-      max-file-size: 15MB
-      max-request-size: 15MB
+      max-file-size: 500MB
+      max-request-size: 500MB
   mvc:
     throw-exception-if-no-handler-found: true  # 错误页处理
     path match:
@@ -60,7 +60,7 @@ ws:
   port: 5051  # websocket端口
 
 project:
-  folder: E:/E/Chat/Chat-Source/
+  folder: E:/E/Chat/Chat-Source/  # 服务器存在的磁盘
 
 logging:
   level:

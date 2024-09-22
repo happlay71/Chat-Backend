@@ -18,6 +18,7 @@ public class Constants {
     public static final Integer LENGTH_11 = 11;
     public static final Integer LENGTH_20 = 20;
     public static final Long MIL_LIS_SECONDS_3DAYS_AGO = 3 * 24 * 60 * 60 * 1000L;  // 消息保留时间-3天
+    public static final Long FILE_SIZE_MB = 1024 * 1024L;  // 1Mb大小
 
     public static final String FILE_FOLDER_FILE = "/file/";
     public static final String FILE_FOLDER_AVATAR_NAME = "avatar/";
@@ -26,6 +27,9 @@ public class Constants {
     public static final String COVER_IMAGE_SUFFIX = "_cover.png";
     public static final String APP_EXE_SUFFIX = ".exe";
     public static final String APP_NAME = "ChatSetup.";
+    public static final String[] IMAGE_SUFFIX_LIST = new String[]{".jpeg", ".jpg", ".png", ".gif", ".bmp", ".webp"};
+    public static final String[] VIDEO_SUFFIX_LIST = new String[]{".mp4", ".avi", ".rmvb", ".mkv", ".mov"};
+    // TODO 压缩包/可执行程序的列表--可扩展
 
     public static final String APPLY_INFO_TEMPLATE = "我是%s";
 

@@ -1,5 +1,6 @@
 package online.happlay.chat.utils;
 
+import cn.hutool.core.util.StrUtil;
 import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -85,5 +86,47 @@ public class StringTools {
 
     public static final String getChatSessionIdForGroup(String groupId) {
         return encodeMd5(groupId);
+    }
+
+    /**
+     * 防止HTML注入
+     * @param content
+     * @return
+     */
+    public static String cleanHtmlTag(String content) {
+        if (StrUtil.isEmpty(content)) {
+            return content;
+        }
+        // 将字符串中的所有 < 替换为 &lt;。这是为了防止 HTML 注入攻击，或者防止浏览器错误地将某些内容识别为 HTML 标签
+        content = content.replace("<", "&lt;");
+        // 将换行符替换为 <br> 标签
+        content = content.replace("\r\n", "<br>");
+        content = content.replace("\n", "<br>");
+        return content;
+    }
+
+    /**
+     * 获取文件名后最
+     * @param fileName
+     * @return
+     */
+    public static String getFileSuffix(String fileName) {
+        return fileName.substring(fileName.lastIndexOf("."));
+    }
+
+    /**
+     * 判断是否为数字
+     * @param str
+     * @return
+     */
+    public static boolean isNumber(String str) {
+        String checkNumber = "^[0-9]+$";
+        if (null == str) {
+            return false;
+        }
+        if (!str.matches(checkNumber)) {
+            return false;
+        }
+        return true;
     }
 }
