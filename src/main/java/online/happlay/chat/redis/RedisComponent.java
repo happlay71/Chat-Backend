@@ -137,4 +137,13 @@ public class RedisComponent {
         }
         redisUtils.del(REDIS_KEY_WS_TOKEN + token);
     }
+
+    /**
+     * 移除对应的联系人缓存
+     * @param userId
+     * @param contactId
+     */
+    public void removeUserContact(String userId, String contactId) {
+        redisUtils.lRemove(REDIS_KEY_USER_CONTACT + userId, 1, contactId);
+    }
 }

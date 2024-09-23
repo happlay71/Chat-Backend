@@ -8,6 +8,7 @@ import online.happlay.chat.entity.vo.group.GroupDetails;
 import online.happlay.chat.entity.vo.group.GroupInfoVO;
 import online.happlay.chat.entity.vo.group.MyGroups;
 import online.happlay.chat.entity.vo.page.PaginationResultVO;
+import online.happlay.chat.enums.message.MessageTypeEnum;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -42,4 +43,8 @@ public interface IGroupInfoService extends IService<GroupInfo> {
     PaginationResultVO<GroupDetails> loadGroup(LoadGroupQueryDTO loadGroupQueryDTO);
 
     void dissolutionGroup(String groupId, String groupOwnerId);
+
+    void addOrRemoveGroupUser(UserTokenDTO userToken, String groupId, String selectContacts, Integer opType);
+
+    void leaveGroup(String userId, String groupId, MessageTypeEnum messageTypeEnum);
 }

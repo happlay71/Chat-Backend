@@ -262,6 +262,25 @@ public class ChannelContextUtils {
             return;
         }
         channelGroup.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(messageSendDTO)));
+
+        // 移除群聊
+        MessageTypeEnum messageTypeEnum = MessageTypeEnum.getByType(messageSendDTO.getMessageType());
+        // 如果是退出群聊或者被踢出群聊
+        if ((MessageTypeEnum.LEAVE_GROUP == messageTypeEnum || MessageTypeEnum.REMOVE_GROUP == messageTypeEnum)) {
+            String userId = (String) messageSendDTO.getExtendData();
+            redisComponent.removeUserContact(userId, messageSendDTO.getContactId());  // 移除群组的缓存
+            Channel channel = USER_CONTEXT_MAP.get(userId);
+            if (channel == null) {
+                return;
+            }
+            channelGroup.remove(channel);  // 移除该用户在此群组的通道
+        }
+
+        // 解散群组
+        if (MessageTypeEnum.DISSOLUTION_GROUP == messageTypeEnum) {
+            GROUP_CONTEXT_MAP.remove(messageSendDTO.getContactId());
+            channelGroup.close();
+        }
     }
 
     // 发送给用户

@@ -11,6 +11,7 @@ import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.vo.common.ResponseVO;
 import online.happlay.chat.entity.vo.user.UserInfoVO;
 import online.happlay.chat.service.IUserInfoService;
+import online.happlay.chat.websocket.netty.ChannelContextUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +34,8 @@ import java.io.IOException;
 public class UserInfoController extends BaseController {
 
     private final IUserInfoService userInfoService;
+
+    private final ChannelContextUtils channelContextUtils;
 
 
     @ApiOperation("获取当前用户信息")
@@ -71,7 +74,8 @@ public class UserInfoController extends BaseController {
     ) {
         UserTokenDTO userToken = getUserToken(request);
         userInfoService.updatePassword(userToken, password);
-        // TODO 强制退出，重新登录
+        // 强制退出，重新登录
+        channelContextUtils.closeContext(userToken.getUserId());
         return getSuccessResponseVO(null);
     }
 
@@ -80,7 +84,8 @@ public class UserInfoController extends BaseController {
     @GlobalInterceptor
     public ResponseVO logout(HttpServletRequest request) {
         UserTokenDTO userToken = getUserToken(request);
-        // TODO 退出登录，关闭WS连接
+        // 退出登录，关闭WS连接
+        channelContextUtils.closeContext(userToken.getUserId());
         return getSuccessResponseVO(null);
     }
 }

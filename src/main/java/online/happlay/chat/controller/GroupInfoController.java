@@ -16,6 +16,7 @@ import online.happlay.chat.entity.vo.group.GroupInfoVO;
 import online.happlay.chat.entity.vo.group.MyGroups;
 import online.happlay.chat.entity.vo.page.PaginationResultVO;
 import online.happlay.chat.enums.ResponseCodeEnum;
+import online.happlay.chat.enums.message.MessageTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.service.IGroupInfoService;
 import org.springframework.validation.annotation.Validated;
@@ -74,7 +75,8 @@ public class GroupInfoController extends BaseController {
     @ApiOperation("查看群组的详细信息")
     @PostMapping("/getGroupInfo")
     @GlobalInterceptor
-    public ResponseVO<GroupDetails> getGroupInfo(HttpServletRequest request, @RequestParam("groupId") @NotEmpty String groupId) {
+    public ResponseVO<GroupDetails> getGroupInfo(HttpServletRequest request,
+                                                 @RequestParam("groupId") @NotEmpty String groupId) {
         // 获取当前用户的 token 对象
         UserTokenDTO userToken = getUserToken(request);
         GroupDetails groupDetails = groupInfoService.getGroupInfo(userToken, groupId);
@@ -85,12 +87,51 @@ public class GroupInfoController extends BaseController {
     @ApiOperation("查看群组的成员信息")
     @PostMapping("/getGroupInfo4Chat")
     @GlobalInterceptor
-    public ResponseVO<GroupInfoVO> getGroupMember(HttpServletRequest request, @RequestParam("groupId") @NotEmpty String groupId) {
+    public ResponseVO<GroupInfoVO> getGroupMember(HttpServletRequest request,
+                                                  @RequestParam("groupId") @NotEmpty String groupId) {
         // 获取当前用户的 token 对象
         UserTokenDTO userToken = getUserToken(request);
         GroupInfoVO groupInfoVO = groupInfoService.getGroupMember(userToken, groupId);
         // 返回封装的响应结果
         return getSuccessResponseVO(groupInfoVO);
+    }
+
+    @ApiOperation("群成员退出群聊")
+    @PostMapping("/leaveGroup")
+    @GlobalInterceptor
+    public ResponseVO leaveGroup(HttpServletRequest request,
+                                              @RequestParam("groupId") @NotEmpty String groupId) {
+        // 获取当前用户的 token 对象
+        UserTokenDTO userToken = getUserToken(request);
+        groupInfoService.leaveGroup(userToken.getUserId(), groupId, MessageTypeEnum.LEAVE_GROUP);
+        // 返回封装的响应结果
+        return getSuccessResponseVO(null);
+    }
+
+    @ApiOperation("群管理员添加或踢出群成员")
+    @PostMapping("/addOrRemoveGroupUser")
+    @GlobalInterceptor
+    public ResponseVO addOrRemoveGroupUser(HttpServletRequest request,
+                                           @RequestParam("groupId") @NotEmpty String groupId,
+                                           @RequestParam("selectContacts") @NotEmpty String selectContacts,
+                                           @RequestParam("opType") Integer opType) {
+        // 获取当前用户的 token 对象
+        UserTokenDTO userToken = getUserToken(request);
+        groupInfoService.addOrRemoveGroupUser(userToken, groupId, selectContacts, opType);
+        // 返回封装的响应结果
+        return getSuccessResponseVO(null);
+    }
+
+    @ApiOperation("群主解散群聊")
+    @PostMapping("/dissolutionGroup")
+    @GlobalInterceptor
+    public ResponseVO dissolutionGroup(HttpServletRequest request,
+                                       @RequestParam("groupId") @NotEmpty String groupId) {
+        // 获取当前用户的 token 对象
+        UserTokenDTO userToken = getUserToken(request);
+        groupInfoService.dissolutionGroup(userToken.getUserId(), groupId);
+        // 返回封装的响应结果
+        return getSuccessResponseVO(null);
     }
 
     @ApiOperation("管理员加载所有群组信息")

@@ -322,7 +322,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
 
             chatSessionUser.setContactName(groupInfo.getGroupName());
             chatSessionUser.setSessionId(sessionId);
-            chatSessionUserService.save(chatSessionUser);
+            chatSessionUserService.saveOrUpdate(chatSessionUser);
 
             // 2.会话信息
             // 2.1查询申请人信息及发送的消息

@@ -2,6 +2,7 @@ package online.happlay.chat.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
@@ -15,6 +16,7 @@ import online.happlay.chat.entity.vo.group.GroupInfoVO;
 import online.happlay.chat.entity.vo.group.MyGroups;
 import online.happlay.chat.entity.vo.page.PaginationResultVO;
 import online.happlay.chat.entity.vo.userContact.UserContactVO;
+import online.happlay.chat.enums.group.GroupOpTypeEnum;
 import online.happlay.chat.enums.group.GroupStatusEnum;
 import online.happlay.chat.enums.ResponseCodeEnum;
 import online.happlay.chat.enums.message.MessageStatusEnum;
@@ -23,16 +25,19 @@ import online.happlay.chat.enums.userContact.UserContactStatusEnum;
 import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import online.happlay.chat.mapper.GroupInfoMapper;
+import online.happlay.chat.mapper.UserContactMapper;
 import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.utils.StringTools;
 import online.happlay.chat.websocket.netty.ChannelContextUtils;
 import online.happlay.chat.websocket.netty.MessageHandler;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -60,7 +65,9 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
 
     private final IUserInfoService userInfoService;
 
-    private final GroupInfoMapper groupInfoMapper;
+    @Resource
+    @Lazy
+    private final IGroupInfoService groupInfoService;
 
     private final IChatSessionService chatSessionService;
 
@@ -68,12 +75,22 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
 
     private final IChatSessionUserService chatSessionUserService;
 
+    private final GroupInfoMapper groupInfoMapper;
+
+    private final UserContactMapper userContactMapper;
+
     private final ChannelContextUtils channelContextUtils;
 
     private final MessageHandler messageHandler;
 
-    // 新增
-    // TODO 目前为群主建群，再邀人，可将邀人和建群操作合并
+    /**
+     * 新增群组
+     * TODO 目前为群主建群，再邀人，可将邀人和建群操作合并
+     * @param groupInfo
+     * @param avatarFile
+     * @param avatarCover
+     * @throws IOException
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveGroup(GroupInfo groupInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException {
@@ -154,7 +171,13 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
 
     }
 
-    // 修改
+    /**
+     * 修改群组信息
+     * @param groupInfo
+     * @param avatarFile
+     * @param avatarCover
+     * @throws IOException
+     */
     @Override
     public void updateGroup(GroupInfo groupInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException {
         LambdaQueryWrapper<GroupInfo> queryWrapper = new LambdaQueryWrapper<>();
@@ -186,6 +209,11 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         saveAvatar(groupInfo, avatarFile, avatarCover);
     }
 
+    /**
+     * 获取该用户创建的群组
+     * @param userToken
+     * @return
+     */
     @Override
     public List<MyGroups> getMyGroups(UserTokenDTO userToken) {
         // 获取当前用户的ID
@@ -201,6 +229,12 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         return BeanUtil.copyToList(groupList, MyGroups.class);
     }
 
+    /**
+     * 获取群组信息
+     * @param userToken
+     * @param groupId
+     * @return
+     */
     @Override
     public GroupDetails getGroupInfo(UserTokenDTO userToken, String groupId) {
         // 获取当前用户的ID
@@ -238,6 +272,12 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         return groupDetails;
     }
 
+    /**
+     * 获取群成员信息
+     * @param userToken
+     * @param groupId
+     * @return
+     */
     @Override
     public GroupInfoVO getGroupMember(UserTokenDTO userToken, String groupId) {
         LambdaQueryWrapper<GroupInfo> queryWrapper = new LambdaQueryWrapper<>();
@@ -306,6 +346,11 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         );
     }
 
+    /**
+     * 解释群组
+     * @param groupId
+     * @param groupOwnerId
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void dissolutionGroup(String groupId, String groupOwnerId) {
@@ -329,10 +374,144 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
         userContact.setStatus(UserContactStatusEnum.DEL.getStatus());
         userContactService.update(userContact, queryWrapper);
 
-        // TODO 移除相关群员的联系人缓存
-        // TODO 发消息 1.更新会话信息 2.记录群消息 3.发送解散通知消息
+        // 移除相关群员的联系人缓存
+        List<UserContact> userContactList = userContactService.list(queryWrapper);
+        userContactList.forEach(contact -> redisComponent.removeUserContact(contact.getUserId(), contact.getContactId()));
+
+        String sessionId = StringTools.getChatSessionIdForGroup(groupId);
+        LocalDateTime time = LocalDateTime.now();
+        String messageContent = MessageTypeEnum.DISSOLUTION_GROUP.getInitMessage();
+
+        // 1.更新会话信息
+        ChatSession chatSession = chatSessionService.getById(sessionId);
+        chatSession.setLastMessage(messageContent);
+        chatSession.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatSession.setSessionId(sessionId);
+        chatSessionService.updateById(chatSession);
+
+        // 2.记录群消息
+        ChatMessage chatMessage = new ChatMessage();
+        chatMessage.setSessionId(sessionId);
+        chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatMessage.setContactType(UserContactTypeEnum.GROUP.getType());
+        chatMessage.setStatus(MessageStatusEnum.SENDEND.getStatus());
+        chatMessage.setMessageType(MessageTypeEnum.DISSOLUTION_GROUP.getType());
+        chatMessage.setContactId(groupId);
+        chatMessage.setMessageContent(messageContent);
+        chatMessageService.save(chatMessage);
+
+        // 3.发送解散通知消息
+        MessageSendDTO messageSendDTO = BeanUtil.copyProperties(chatMessage, MessageSendDTO.class);
+        messageHandler.sendMessage(messageSendDTO);
     }
 
+    /**
+     * 拉人或踢人
+     * @param userToken
+     * @param groupId
+     * @param selectContacts
+     * @param opType
+     */
+    @Override
+    public void addOrRemoveGroupUser(UserTokenDTO userToken, String groupId, String selectContacts, Integer opType) {
+        GroupInfo groupInfo = this.getById(groupId);
+        // 群组不存在或不属于该用户
+        if (null == groupInfo || !groupInfo.getGroupOwnerId().equals(userToken.getUserId())) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        // 要拉入或踢出的用户的id
+        String[] contactIdList = selectContacts.split(",");
+        for (String contactId : contactIdList) {
+            // 判断是否为用户而非群组
+            Integer contactType = UserContactTypeEnum.getByPrefix(contactId).getType();
+            if (contactType == null) {
+                throw new BusinessException(600, "此用户非有效用户");
+            }
+            if (UserContactTypeEnum.GROUP.getType().equals(contactType)) {
+                throw new BusinessException(ResponseCodeEnum.CODE_600);
+            }
+
+            GroupOpTypeEnum opTypeEnum = GroupOpTypeEnum.getByOpType(opType);
+            switch (opTypeEnum) {
+                case ZERO:
+                    // 内部调用事务不会生效
+                    groupInfoService.leaveGroup(contactId, groupId, MessageTypeEnum.REMOVE_GROUP);
+                    break;
+                case ONE:
+                    userContactService.addContact(contactId, null, groupId, UserContactTypeEnum.GROUP.getType(), null);
+                    break;
+            }
+        }
+    }
+
+    /**
+     * 离开群聊-----内部调用此方法(通过this)会使事务失效
+     * @param userId
+     * @param groupId
+     * @param messageTypeEnum
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void leaveGroup(String userId, String groupId, MessageTypeEnum messageTypeEnum) {
+        GroupInfo groupInfo = this.getById(groupId);
+        if (groupInfo == null) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+        // 群主无法退群
+        if (userId.equals(groupInfo.getGroupOwnerId())) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        QueryWrapper<UserContact> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        queryWrapper.eq("groupId", groupId);
+        int count = userContactMapper.delete(queryWrapper);
+        if (count == 0) {
+            throw new BusinessException(ResponseCodeEnum.CODE_600);
+        }
+
+        UserInfo userInfo = userInfoService.getById(userId);
+        String sessionId = StringTools.getChatSessionIdForGroup(groupId);
+        LocalDateTime time = LocalDateTime.now();
+        String messageContent = String.format(messageTypeEnum.getInitMessage(), userInfo.getNickName());
+
+        // 会话信息表
+        ChatSession chatSession = chatSessionService.getById(sessionId);
+        chatSession.setLastReceiveTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatSession.setLastMessage(messageContent);
+        chatSessionService.updateById(chatSession);
+
+        // 聊天消息表
+        ChatMessage chatMessage = new ChatMessage();
+        chatMessage.setSessionId(sessionId);
+        chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        chatMessage.setContactType(UserContactTypeEnum.GROUP.getType());
+        chatMessage.setStatus(MessageStatusEnum.SENDEND.getStatus());
+        chatMessage.setMessageType(messageTypeEnum.getType());
+        chatMessage.setContactId(groupId);
+        chatMessage.setMessageContent(messageContent);
+        chatMessageService.save(chatMessage);
+
+        // 更新群聊人数
+        long memberCount = userContactService.count(new QueryWrapper<UserContact>()
+                .eq("contact_id", groupId)
+                .eq("status", UserContactStatusEnum.FRIEND.getStatus()));
+
+        // 发送消息
+        MessageSendDTO messageSendDTO = BeanUtil.copyProperties(chatMessage, MessageSendDTO.class);
+        messageSendDTO.setExtendData(userId);
+        messageSendDTO.setMemberCount((int) memberCount);
+        messageHandler.sendMessage(messageSendDTO);
+    }
+
+    /**
+     * 保存头像信息
+     * @param groupInfo
+     * @param avatarFile
+     * @param avatarCover
+     * @throws IOException
+     */
     private void saveAvatar(GroupInfo groupInfo, MultipartFile avatarFile, MultipartFile avatarCover) throws IOException {
         if (null == avatarFile) {
             return;
