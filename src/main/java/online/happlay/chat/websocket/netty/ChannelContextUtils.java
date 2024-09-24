@@ -289,9 +289,10 @@ public class ChannelContextUtils {
         if (StrUtil.isEmpty(contactId)) {
             return;
         }
+        // 发送消息
         sendMsg(messageSendDTO, contactId);
 
-        // 强制下线
+        // 强制下线--关闭通道
         if (MessageTypeEnum.FORCE_OFF_LINE.getType().equals(messageSendDTO.getMessageType())) {
             closeContext(contactId);
         }

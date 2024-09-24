@@ -405,9 +405,11 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
                 .eq(UserContact::getUserId, otherUserContact.getUserId())
                 .eq(UserContact::getContactId, otherUserContact.getContactId()));
 
-        // TODO 从我的列表缓存中删除好友
+        // 从我的列表缓存中删除好友
+        redisComponent.removeUserContact(userId, contactId);
 
-        // TODO 从好友的列表缓存中删除我
+        // 从好友的列表缓存中删除我
+        redisComponent.removeUserContact(contactId, userId);
     }
 
     /**

@@ -143,9 +143,9 @@ public class GroupInfoController extends BaseController {
     }
 
     @ApiOperation("管理员解散群组")
-    @PostMapping("/dissolutionGroup")
+    @PostMapping("/dissolutionGroupByAdmin")
     @GlobalInterceptor(checkAdmin = true)
-    public ResponseVO dissolutionGroup(@RequestParam("groupId") @NotEmpty String groupId) {
+    public ResponseVO dissolutionGroupByAdmin(@RequestParam("groupId") @NotEmpty String groupId) {
         GroupInfo groupInfo = groupInfoService.getById(groupId);
         if (groupInfo == null) {
             throw new BusinessException(ResponseCodeEnum.CODE_600);

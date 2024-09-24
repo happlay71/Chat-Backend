@@ -1,5 +1,6 @@
 package online.happlay.chat.entity.po;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -61,6 +62,9 @@ public class    ChatSessionUser implements Serializable {
     private Integer contactType;
 
     public Integer getContactType() {
+        if (StrUtil.isEmpty(contactId)) {
+            return null;
+        }
         return UserContactTypeEnum.getByPrefix(contactId).getType();
     }
 

@@ -65,9 +65,9 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
 
     private final IUserInfoService userInfoService;
 
-    @Resource
     @Lazy
-    private final IGroupInfoService groupInfoService;
+    @Resource
+    private IGroupInfoService groupInfoService;
 
     private final IChatSessionService chatSessionService;
 

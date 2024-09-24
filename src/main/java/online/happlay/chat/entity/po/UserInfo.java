@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
+import java.time.ZoneOffset;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -69,5 +71,15 @@ public class UserInfo implements Serializable {
     @ApiModelProperty(value = "最后离开时间")
     private Long lastOffTime;
 
+    @ApiModelProperty(value = "最后在线时间")
+    @TableField(exist = false)
+    private Integer onlineType;
 
+    public Integer getOnlineType() {
+        if (lastLoginTime != null && lastLoginTime.toEpochSecond(ZoneOffset.UTC) > lastOffTime) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
 }

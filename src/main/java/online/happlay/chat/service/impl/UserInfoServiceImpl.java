@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import online.happlay.chat.config.CommonConfig;
 import online.happlay.chat.constants.Constants;
+import online.happlay.chat.entity.dto.message.MessageSendDTO;
 import online.happlay.chat.entity.dto.user.UserQueryDTO;
 import online.happlay.chat.entity.dto.user.UserTokenDTO;
 import online.happlay.chat.entity.po.UserContact;
@@ -15,6 +16,7 @@ import online.happlay.chat.enums.*;
 import online.happlay.chat.entity.po.UserInfo;
 import online.happlay.chat.entity.po.UserInfoBeauty;
 import online.happlay.chat.entity.vo.user.UserInfoVO;
+import online.happlay.chat.enums.message.MessageTypeEnum;
 import online.happlay.chat.enums.user.UserStatusEnum;
 import online.happlay.chat.enums.userBeauty.BeautyAccountStatusEnum;
 import online.happlay.chat.enums.userContact.JoinTypeEnum;
@@ -29,6 +31,7 @@ import online.happlay.chat.service.IUserInfoBeautyService;
 import online.happlay.chat.service.IUserInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import online.happlay.chat.utils.StringTools;
+import online.happlay.chat.websocket.netty.MessageHandler;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -66,6 +69,10 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
     private final CommonConfig commonConfig;
 
     private final RedisComponent redisComponent;
+
+    @Lazy
+    @Resource
+    private MessageHandler messageHandler;
 
     @Lazy
     @Resource
@@ -205,7 +212,12 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
 
     @Override
     public void forceOffLine(String userId) {
-        // TODO 强制下线
+        // 强制下线
+        MessageSendDTO messageSendDTO = new MessageSendDTO();
+        messageSendDTO.setContactType(UserContactTypeEnum.USER.getType());
+        messageSendDTO.setMessageType(MessageTypeEnum.FORCE_OFF_LINE.getType());
+        messageSendDTO.setContactId(userId);
+        messageHandler.sendMessage(messageSendDTO);
     }
 
     @Override
