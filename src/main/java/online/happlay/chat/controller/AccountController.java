@@ -52,8 +52,8 @@ public class AccountController extends BaseController {
         redisUtils.set(REDIS_KEY_CHECK_CODE + checkCodeKey, code, REDIS_CHECK_CODE_OUTTIME * 10);
 
         Map<String, String> result = new HashMap<>();
-        result.put("checkCode：", checkCodeBase64);
-        result.put("checkCodeKey：", checkCodeKey);
+        result.put("checkCode", checkCodeBase64);
+        result.put("checkCodeKey", checkCodeKey);
         return getSuccessResponseVO(result);
     }
 
