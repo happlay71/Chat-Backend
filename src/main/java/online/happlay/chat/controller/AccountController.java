@@ -40,7 +40,7 @@ public class AccountController extends BaseController {
     private final RedisComponent redisComponent;
 
     @ApiOperation("发送验证码")
-    @GetMapping("/checkCode")
+    @PostMapping("/checkCode")
     public ResponseVO checkCode() {
         ArithmeticCaptcha captcha = new ArithmeticCaptcha(100, 42);
         String code = captcha.text();
