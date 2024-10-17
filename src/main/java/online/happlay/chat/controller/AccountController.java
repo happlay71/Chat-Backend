@@ -40,7 +40,7 @@ public class AccountController extends BaseController {
     private final RedisComponent redisComponent;
 
     @ApiOperation("发送验证码")
-    @PostMapping("/checkCode")
+    @GetMapping("/checkCode")
     public ResponseVO checkCode() {
         ArithmeticCaptcha captcha = new ArithmeticCaptcha(100, 42);
         String code = captcha.text();
@@ -80,7 +80,6 @@ public class AccountController extends BaseController {
     @ApiOperation("登录")
     @PostMapping("/login")
     public ResponseVO register(@Validated @ModelAttribute LoginDTO loginDTO) {
-        System.out.println("密码是：" + StringTools.encodeMd5(loginDTO.getPassword()));
         String checkCode = loginDTO.getCheckCode();
         String checkCodeKey = loginDTO.getCheckCodeKey();
         String key = REDIS_KEY_CHECK_CODE + checkCodeKey;

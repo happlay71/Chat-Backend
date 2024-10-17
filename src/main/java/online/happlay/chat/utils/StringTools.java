@@ -1,6 +1,7 @@
 package online.happlay.chat.utils;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.exception.BusinessException;
 import org.apache.commons.codec.digest.DigestUtils;

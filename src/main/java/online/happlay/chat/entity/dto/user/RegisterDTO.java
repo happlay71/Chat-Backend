@@ -17,7 +17,7 @@ public class RegisterDTO {
     private String email;
 
     @NotBlank
-    @Pattern(regexp = Constants.REGEX_PASSWORD)
+//    @Pattern(regexp = Constants.REGEX_PASSWORD)
     private String password;
 
     @NotBlank

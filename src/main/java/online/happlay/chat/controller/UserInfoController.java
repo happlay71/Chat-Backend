@@ -70,7 +70,7 @@ public class UserInfoController extends BaseController {
     @PostMapping("/updatePassword")
     @GlobalInterceptor
     public ResponseVO updatePassword(HttpServletRequest request,
-                                     @RequestParam("password") @Pattern(regexp = Constants.REGEX_PASSWORD) String password
+                                     @RequestParam("password") String password
     ) {
         UserTokenDTO userToken = getUserToken(request);
         userInfoService.updatePassword(userToken, password);

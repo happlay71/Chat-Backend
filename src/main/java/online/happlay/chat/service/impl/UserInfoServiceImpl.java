@@ -137,7 +137,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
         UserInfo userInfo = this.getByEmail(email);
 
         // 判断账户状态
-        if (null == userInfo || !userInfo.getPassword().equals(StringTools.encodeMd5(password))) {
+        if (null == userInfo || !userInfo.getPassword().equals(password)) {
             throw new BusinessException("账户或密码不正确");
         }
 

@@ -254,6 +254,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
         // 创建会话 发送消息
         String sessionId = null;
         if (UserContactTypeEnum.USER.getType().equals(contactType)) {
+            // 创建sessionId
             sessionId = StringTools.getChatSessionIdForUser(new String[]{applyUserId, contactId});
         } else {
             sessionId = StringTools.getChatSessionIdForGroup(contactId);

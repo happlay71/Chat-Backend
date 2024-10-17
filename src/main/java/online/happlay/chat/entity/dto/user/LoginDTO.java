@@ -17,7 +17,6 @@ public class LoginDTO {
     private String email;
 
     @NotBlank
-    @Pattern(regexp = Constants.REGEX_PASSWORD)
     private String password;
 
     @NotBlank
