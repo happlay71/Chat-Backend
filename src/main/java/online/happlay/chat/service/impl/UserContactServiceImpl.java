@@ -23,6 +23,7 @@ import online.happlay.chat.enums.userContact.UserContactStatusEnum;
 import online.happlay.chat.enums.userContact.UserContactTypeEnum;
 import online.happlay.chat.enums.userContactApply.UserContactApplyStatusEnum;
 import online.happlay.chat.exception.BusinessException;
+import online.happlay.chat.mapper.ChatSessionUserMapper;
 import online.happlay.chat.mapper.UserContactMapper;
 import online.happlay.chat.redis.RedisComponent;
 import online.happlay.chat.service.*;
@@ -63,6 +64,10 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
     private final IChatSessionService chatSessionService;
 
     private final IChatMessageService chatMessageService;
+
+    private final UserContactMapper userContactMapper;
+
+    private final ChatSessionUserMapper chatSessionUserMapper;
 
     private final RedisComponent redisComponent;
 
@@ -200,6 +205,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addContact(String applyUserId, String receiveUserId, String contactId, Integer contactType, String applyInfo) {
         // 群聊人数
         if (UserContactTypeEnum.GROUP.getType().equals(contactType)) {
@@ -240,7 +246,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
             contactList.add(userContact);
         }
 
-        this.saveBatch(contactList);
+        userContactMapper.saveOrUpdateList(contactList);
 
         // 如果是好友，接收人也添加申请人为好友 添加缓存
 
@@ -287,10 +293,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
             contactSessionUser.setContactName(applyUser.getNickName());
             chatSessionUserList.add(contactSessionUser);
 
-            // 如果直接调用批量新增或修改可能导致主键冲突
-            for (ChatSessionUser chatSessionUser : chatSessionUserList) {
-                chatSessionUserService.saveOrUpdate(chatSessionUser);
-            }
+            chatSessionUserMapper.saveOrUpdateBatchCustom(chatSessionUserList);
 
             // 记录消息表
             ChatMessage chatMessage = new ChatMessage();
@@ -302,7 +305,7 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
             chatMessage.setSendTime(time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
             chatMessage.setContactId(contactId);
             chatMessage.setContactType(UserContactTypeEnum.USER.getType());
-            chatMessageService.save(chatMessage);
+            chatMessageService.saveOrUpdate(chatMessage);
 
             MessageSendDTO messageSendDTO = BeanUtil.copyProperties(chatMessage, MessageSendDTO.class);
             // 发送给接收人、申请人

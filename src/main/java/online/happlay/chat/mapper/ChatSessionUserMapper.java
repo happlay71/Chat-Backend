@@ -30,4 +30,7 @@ public interface ChatSessionUserMapper extends BaseMapper<ChatSessionUser> {
             "order by cs.last_receive_time desc"
     )
     List<ChatSessionUser> selectChatSessions(@Param("userId") String userId);  // 不是群组的memberCount为0
+
+    // 自定义的批量插入或更新方法
+    void saveOrUpdateBatchCustom(List<ChatSessionUser> chatSessionUserList);
 }

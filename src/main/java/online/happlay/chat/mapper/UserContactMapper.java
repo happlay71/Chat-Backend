@@ -1,8 +1,11 @@
 package online.happlay.chat.mapper;
 
+import online.happlay.chat.entity.po.ChatSessionUser;
 import online.happlay.chat.entity.po.UserContact;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * <p>
@@ -14,5 +17,7 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface UserContactMapper extends BaseMapper<UserContact> {
+
+    void saveOrUpdateList(List<UserContact> userContactList);
 
 }

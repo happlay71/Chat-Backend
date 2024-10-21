@@ -109,7 +109,6 @@ public class UserContactApplyServiceImpl extends ServiceImpl<UserContactApplyMap
         String receiveUserId = contactId;
 
         // 查询是否已添加，被拉黑无法添加
-        // TODO 可能判断首次被拉黑没做？？？ P15
         UserContact userContact = userContactService.getOne(new LambdaQueryWrapper<UserContact>()
                 .eq(UserContact::getUserId, applyUserId)
                 .eq(UserContact::getContactId, contactId));
