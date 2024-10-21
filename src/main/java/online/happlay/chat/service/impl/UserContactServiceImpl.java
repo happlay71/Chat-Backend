@@ -287,7 +287,10 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
             contactSessionUser.setContactName(applyUser.getNickName());
             chatSessionUserList.add(contactSessionUser);
 
-            chatSessionUserService.saveOrUpdateBatch(chatSessionUserList);
+            // 如果直接调用批量新增或修改可能导致主键冲突
+            for (ChatSessionUser chatSessionUser : chatSessionUserList) {
+                chatSessionUserService.saveOrUpdate(chatSessionUser);
+            }
 
             // 记录消息表
             ChatMessage chatMessage = new ChatMessage();
