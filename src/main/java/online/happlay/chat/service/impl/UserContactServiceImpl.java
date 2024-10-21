@@ -150,6 +150,9 @@ public class UserContactServiceImpl extends ServiceImpl<UserContactMapper, UserC
                 // 查询所有符合条件的群组联系人
                 queryWrapper.eq(UserContact::getContactType, UserContactTypeEnum.GROUP.getType());
                 System.out.println("群组" + this.list(queryWrapper));
+                // 关联 contactUserApply 表，排除自己创建的群聊
+                queryWrapper.notExists("(SELECT 1 FROM group_info gi WHERE gi.group_owner_id = user_contact.user_id AND gi.group_id = user_contact.contact_id)");
+
                 // 如果创建时间和最后更新时间相等且状态为被拉黑的情况，则不出现在查询结果里
                 // 这里的意思是只要创建时间和最后更新时间不等或不为被拉黑的情况，则包含在查询记录中
                 queryWrapper.and(qw ->

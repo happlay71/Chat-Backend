@@ -103,8 +103,9 @@ public class GroupInfoServiceImpl extends ServiceImpl<GroupInfoMapper, GroupInfo
             throw new BusinessException("超出个人创建群组的最大限制！");
         }
 
+        // 没有新增头像文件则抛异常
         if (null == avatarFile) {
-            throw new BusinessException(ResponseCodeEnum.CODE_600);
+//            throw new BusinessException(ResponseCodeEnum.CODE_600);
         }
 
         LocalDateTime time = LocalDateTime.now();
